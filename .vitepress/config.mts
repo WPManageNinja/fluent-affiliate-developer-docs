@@ -113,6 +113,7 @@ function buildRestApiSidebar() {
 const guidePages = [
   { text: 'Guides Overview', link: '/guides/' },
   { text: 'Custom Integration', link: '/guides/custom-integration' },
+  { text: 'Portal Customization', link: '/guides/portal-customization' },
   { text: 'Code Snippets', link: '/guides/code-snippets' },
 ]
 
