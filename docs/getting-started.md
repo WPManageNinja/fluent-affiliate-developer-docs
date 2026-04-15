@@ -27,6 +27,23 @@ All data is stored in custom database tables (prefixed `fa_`) rather than WordPr
 
 **REST API** — Registered at `wp-json/fluent-affiliate/v2/` via `app/Http/Routes/api.php` on the `rest_api_init` hook.
 
+### Request Lifecycle
+
+```mermaid
+flowchart LR
+    A[HTTP Request] --> B[WordPress REST API]
+    B --> C[WPFluent Router\napi.php]
+    C --> D{Policy\nverifyRequest}
+    D -->|Denied| E[403 / 401 Response]
+    D -->|Allowed| F[Controller Method]
+    F --> G[Service / Model]
+    G --> H[fa_ Database Tables]
+    H --> G
+    G --> F
+    F -->|array| I[JSON Response\n200 / 201]
+    F -->|sendError| J[JSON Response\n4xx]
+```
+
 **Frontend Admin SPA** — Vue 3 + Element Plus, hash routing, served from `resources/admin/`. Compiled output in `assets/admin/`.
 
 **Affiliate Portal SPA** — Separate Vue 3 application, served from `resources/Customer/`. Compiled output in `assets/public/`.
@@ -63,6 +80,38 @@ fetch('/wp-json/fluent-affiliate/v2/affiliates', {
 ```
 
 The built-in admin SPA injects the nonce as `window.fluentAffiliateAdmin.nonce` and sends it automatically via the internal REST client (`resources/admin/Bits/Rest.js`).
+
+## Response Envelope
+
+All API responses are JSON. Successful responses return HTTP `200` (or `201` for creates) with a plain JSON object whose keys depend on the endpoint:
+
+```json
+// List response
+{ "affiliates": [ { "id": 1, "user_id": 5, "status": "active", ... } ] }
+
+// Single resource
+{ "affiliate": { "id": 1, "user_id": 5, ... } }
+
+// Paginated list
+{
+  "affiliates": [...],
+  "total": 142,
+  "per_page": 15,
+  "current_page": 1,
+  "last_page": 10
+}
+
+// Mutation success
+{ "message": "Affiliate has been created", "affiliate": { ... } }
+```
+
+Error responses default to HTTP `422` (or another 4xx code) and always include a `message` key:
+
+```json
+{ "message": "The selected group could not be found" }
+```
+
+There is no top-level `data` wrapper — the resource key (`affiliates`, `referral`, `payout`, etc.) is always at the root of the response object.
 
 ## Authorization
 
