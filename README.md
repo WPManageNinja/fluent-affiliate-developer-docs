@@ -2,6 +2,8 @@
 
 Developer documentation for [FluentAffiliate](https://fluentaffiliate.com/) — the self-hosted affiliate program plugin by WPManageNinja.
 
+**Live site:** [dev.fluentaffiliate.com](https://dev.fluentaffiliate.com/)
+
 ## What's inside 
 
 - **Database** — Schema overview, Eloquent-style models, relationships, and query builder usage
