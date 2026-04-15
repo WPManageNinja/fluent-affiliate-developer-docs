@@ -147,7 +147,7 @@ const COLUMN_DESC = {
 
   // fa_creatives (Pro)
   name:          'Creative asset name.',
-  type:          'Creative type — `image`, `text`, `html`, `banner`.',
+  type:          'Creative type — `image`, `text`, `html`, `banner`.', // overridden per-table below
   image:         'URL of the creative image asset.',
   text:          'Text content for text-type creatives.',
   url:           'Destination URL linked from the creative.',
@@ -155,6 +155,13 @@ const COLUMN_DESC = {
   affiliate_ids: 'JSON array of affiliate IDs this creative is restricted to.',
   group_ids:     'JSON array of group IDs this creative is restricted to.',
   meta:          'Additional metadata for the creative.',
+}
+
+// Per-table column description overrides — takes precedence over COLUMN_DESC
+const TABLE_COLUMN_DESC = {
+  fa_referrals: {
+    type: 'Referral type — `sale`, `opt_in`, or `recurring_sale`.',
+  },
 }
 
 // ---------------------------------------------------------------------------
@@ -179,12 +186,12 @@ function parseMigrationsDir(dir) {
     const sqlMatch = content.match(/CREATE TABLE \$table \(([\s\S]*?)\)\s*\$charsetCollate/)
     if (!sqlMatch) continue
 
-    tables[tableName] = parseCreateTableBody(sqlMatch[1])
+    tables[tableName] = parseCreateTableBody(sqlMatch[1], tableName)
   }
   return tables
 }
 
-function parseCreateTableBody(body) {
+function parseCreateTableBody(body, tableName = '') {
   const columns = []
   for (const rawLine of body.split('\n')) {
     const line = rawLine.trim()
@@ -203,7 +210,7 @@ function parseCreateTableBody(body) {
       type:    colType.toUpperCase(),
       nullable,
       default: defaultVal,
-      desc:    COLUMN_DESC[colName] ?? '',
+      desc:    (TABLE_COLUMN_DESC[tableName] ?? {})[colName] ?? COLUMN_DESC[colName] ?? '',
     })
   }
   return columns
@@ -1191,11 +1198,11 @@ add_filter('fluent_affiliate/will_load_tracker_js', function($willLoad) {
   'fluent_affiliate/after_delete_affiliate_group': {
     desc: 'Fired after an affiliate group has been permanently deleted.',
     params: [
-      { name: '$groupId', type: 'int', desc: 'ID of the deleted affiliate group.' },
+      { name: '$affiliateGroup', type: 'AffiliateGroup', desc: 'The AffiliateGroup model that was deleted (read-only at this point).' },
     ],
-    example: `add_action('fluent_affiliate/after_delete_affiliate_group', function($groupId) {
+    example: `add_action('fluent_affiliate/after_delete_affiliate_group', function($affiliateGroup) {
     // Remove external records for this group
-    delete_option('my_plugin_group_' . $groupId . '_config');
+    delete_option('my_plugin_group_' . $affiliateGroup->id . '_config');
 });`,
   },
 
@@ -1213,12 +1220,15 @@ add_filter('fluent_affiliate/will_load_tracker_js', function($willLoad) {
   'fluent_affiliate/creative_updated': {
     desc: 'Fired after a creative asset has been updated.',
     params: [
-      { name: '$creative', type: 'Creative', desc: 'The updated Creative model.' },
+      { name: '$creative',    type: 'Creative', desc: 'The updated Creative model (new state).' },
+      { name: '$oldCreative', type: 'Creative', desc: 'The Creative model before the update (old state).' },
     ],
-    example: `add_action('fluent_affiliate/creative_updated', function($creative) {
-    // Flush any CDN cache for the updated creative
-    my_cdn_purge_url($creative->image);
-});`,
+    example: `add_action('fluent_affiliate/creative_updated', function($creative, $oldCreative) {
+    // Flush CDN cache only when the image URL changed
+    if ($creative->image !== $oldCreative->image) {
+        my_cdn_purge_url($oldCreative->image);
+    }
+}, 10, 2);`,
   },
   'fluent_affiliate/before_delete_creative': {
     desc: 'Fired immediately before a creative asset is permanently deleted.',
@@ -1233,24 +1243,23 @@ add_filter('fluent_affiliate/will_load_tracker_js', function($willLoad) {
   'fluent_affiliate/after_delete_creative': {
     desc: 'Fired after a creative asset has been permanently deleted.',
     params: [
-      { name: '$creativeId', type: 'int', desc: 'ID of the deleted creative.' },
+      { name: '$creative', type: 'Creative', desc: 'The Creative model that was deleted (read-only at this point).' },
     ],
-    example: `add_action('fluent_affiliate/after_delete_creative', function($creativeId) {
+    example: `add_action('fluent_affiliate/after_delete_creative', function($creative) {
     // Clean up any custom data tied to this creative
-    delete_post_meta(0, '_fa_creative_ref_' . $creativeId);
+    delete_post_meta(0, '_fa_creative_ref_' . $creative->id);
 });`,
   },
   'fluent_affiliate/creative_status_changed': {
-    desc: 'Fired when a creative\'s status transitions (e.g. scheduled → active, active → expired). Triggered by the Action Scheduler jobs.',
+    desc: 'Fired when a creative\'s status transitions (e.g. scheduled → active, active → expired). Triggered by the Action Scheduler jobs. Read `$creative->status` to determine the new status.',
     params: [
-      { name: '$creative', type: 'Creative', desc: 'The Creative model with its updated status.' },
-      { name: '$newStatus', type: 'string',  desc: 'The new status: `active` or `expired`.' },
+      { name: '$creative', type: 'Creative', desc: 'The Creative model with its already-updated status field.' },
     ],
-    example: `add_action('fluent_affiliate/creative_status_changed', function($creative, $newStatus) {
-    if ($newStatus === 'active') {
+    example: `add_action('fluent_affiliate/creative_status_changed', function($creative) {
+    if ($creative->status === 'active') {
         // Notify relevant affiliates the creative is now live
     }
-}, 10, 2);`,
+});`,
   },
   'fluent_affiliate/activate_creative': {
     desc: 'Action Scheduler job name used to activate a scheduled creative at its `start_time`. Do not hook into this unless you understand the scheduling lifecycle.',
@@ -1286,12 +1295,13 @@ add_filter('fluent_affiliate/will_load_tracker_js', function($willLoad) {
   'fluent_affiliate/update_creative_data': {
     desc: 'Filters the creative data array before an existing creative is updated.',
     params: [
-      { name: '$data',     type: 'array',    desc: 'Updated creative data.' },
-      { name: '$creative', type: 'Creative', desc: 'The existing Creative model being updated.' },
+      { name: '$data', type: 'array', desc: 'Updated creative data including `name`, `type`, `url`, `privacy`, `affiliate_ids`, `group_ids`, `meta`.' },
     ],
-    example: `add_filter('fluent_affiliate/update_creative_data', function($data, $creative) {
+    example: `add_filter('fluent_affiliate/update_creative_data', function($data) {
+    // Prevent type from being changed via the API
+    unset($data['type']);
     return $data;
-}, 10, 2);`,
+});`,
   },
 
   // ── Pro: Affiliate Group Filters ───────────────────────────────────────────
@@ -1361,7 +1371,7 @@ add_filter('fluent_affiliate/will_load_tracker_js', function($willLoad) {
   'fluent_affiliate/woo_menu_label': {
     desc: 'Filters the label text for the FluentAffiliate link in the WooCommerce My Account menu.',
     params: [
-      { name: '$label', type: 'string', desc: 'The menu item label. Defaults to `\'Affiliate Portal\'`.' },
+      { name: '$label', type: 'string', desc: 'The menu item label. Defaults to `\'Affiliate Dashboard\'`.' },
     ],
     example: `add_filter('fluent_affiliate/woo_menu_label', function($label) {
     return __('My Referrals', 'my-plugin');
@@ -1369,6 +1379,73 @@ add_filter('fluent_affiliate/will_load_tracker_js', function($willLoad) {
   },
 
   // ── Pro: Recurring Commissions ─────────────────────────────────────────────
+  // ── Pro: Recurring Referrals ───────────────────────────────────────────────
+  'fluent_affiliate/recurring_referral_created': {
+    desc: 'Fired after a recurring referral is recorded for a subscription renewal (WooCommerce Subscriptions or FluentCart). Fires on every renewal, not just the first.',
+    params: [
+      { name: '$referral', type: 'Referral', desc: 'The newly created Referral model for this renewal.' },
+    ],
+    example: `add_action('fluent_affiliate/recurring_referral_created', function($referral) {
+    // Log each recurring commission for external reporting
+    my_plugin_log_recurring_commission($referral->affiliate_id, $referral->amount);
+});`,
+  },
+
+  // ── Pro: Recurring Commission Filters ─────────────────────────────────────
+  // ── Core: Admin URL / JS vars ──────────────────────────────────────────────
+  'fluent_affiliate_base_url': {
+    desc: 'Filters the base URL used by the admin SPA hash router. Override this if you serve the admin under a non-standard path.',
+    params: [
+      { name: '$url', type: 'string', desc: 'The admin page URL used as the hash router base.' },
+    ],
+    example: `add_filter('fluent_affiliate_base_url', function($url) {
+    return admin_url('admin.php?page=fluent-affiliate');
+});`,
+  },
+  'fluent_affiliate_tracker_vars': {
+    desc: 'Filters the JavaScript variable object passed to the front-end affiliate tracking script. Add keys here to expose custom data to the tracker.',
+    params: [
+      { name: '$vars', type: 'array', desc: 'Associative array of variables localised to the tracking script.' },
+    ],
+    example: `add_filter('fluent_affiliate_tracker_vars', function($vars) {
+    $vars['cookie_lifetime'] = 90; // expose custom cookie lifetime to JS
+    return $vars;
+});`,
+  },
+  'fluent_affiliate_dashboard_stats': {
+    desc: 'Filters the full dashboard statistics response before it is returned to the admin SPA. Useful for adding or removing widgets from the admin dashboard overview.',
+    params: [
+      { name: '$stats', type: 'array', desc: 'Associative array of stat widgets (each with `title`, `count`, `is_money`).' },
+    ],
+    example: `add_filter('fluent_affiliate_dashboard_stats', function($stats) {
+    unset($stats['pending_payout']); // remove a widget
+    return $stats;
+});`,
+  },
+  'fluent_affiliate_dashboard_{provider}_stats': {
+    desc: 'Dynamic filter for per-integration dashboard stats widgets. The `{provider}` segment is the integration key (e.g. `woo`, `edd`, `fla`). Allows adding integration-specific stat widgets to the dashboard.',
+    params: [
+      { name: '$widgets', type: 'array', desc: 'Array of widget definitions for this provider (each with `title`, `count`, `is_money`).' },
+    ],
+    example: `// Example: modify stats for the WooCommerce integration
+add_filter('fluent_affiliate_dashboard_woo_stats', function($widgets) {
+    $widgets['custom_metric'] = ['title' => 'My Metric', 'count' => 0, 'is_money' => false];
+    return $widgets;
+});`,
+  },
+  'fluent_affiliate/get_product_cat_options_{integration}': {
+    desc: 'Dynamic filter for populating the product/category options list in an integration settings form. The `{integration}` segment is the integration slug (e.g. `woo`, `edd`). Return an array of `{ id, name }` objects.',
+    params: [
+      { name: '$options', type: 'array', desc: 'Array of option objects, each with `id` (int) and `name` (string).' },
+    ],
+    example: `// Example: add a custom option to the WooCommerce product category list
+add_filter('fluent_affiliate/get_product_cat_options_woo', function($options) {
+    $options[] = ['id' => 999, 'name' => 'My Custom Category'];
+    return $options;
+});`,
+  },
+
+  // ── Pro: Recurring Commission Filters ─────────────────────────────────────
   'fluent_affiliate/recurring_commission': {
     desc: 'Filters the recurring commission data before it is recorded for a subscription renewal.',
     params: [
@@ -1713,7 +1790,9 @@ function buildSchemaDoc(tables) {
     if (!cols || !meta) continue
 
     const proTag = meta.isPro ? ' <span class="pro-badge">PRO</span>' : ''
-    lines.push('', `## \`${tableName}\`${proTag}`, '', meta.desc, '', `**Model class:** [\`${meta.class}\`](/database/models/${tableName.replace('fa_', '').replace('_', '-')})`, '', '| Column | Type | Nullable | Default | Description |', '|--------|------|----------|---------|-------------|')
+    const TABLE_MODEL_SLUG = { fa_affiliates: 'affiliate', fa_referrals: 'referral', fa_payouts: 'payout', fa_payout_transactions: 'transaction', fa_visits: 'visit', fa_customers: 'customer', fa_meta: 'meta', fa_creatives: 'creative' }
+    const modelSlug = TABLE_MODEL_SLUG[tableName] ?? tableName.replace('fa_', '').replace(/_/g, '-')
+    lines.push('', `## \`${tableName}\`${proTag}`, '', meta.desc, '', `**Model class:** [\`${meta.class}\`](/database/models/${modelSlug})`, '', '| Column | Type | Nullable | Default | Description |', '|--------|------|----------|---------|-------------|')
 
     for (const col of cols) {
       const def = col.default !== null ? `\`${col.default}\`` : '—'
@@ -1797,7 +1876,8 @@ function buildModelsIndexDoc(tables) {
     const meta = MODEL_META[t]
     if (!meta) continue
     const proTag = meta.isPro ? ' <span class="pro-badge">PRO</span>' : ''
-    const slug   = t.replace('fa_', '').replace('_', '-')
+    const TABLE_MODEL_SLUG2 = { fa_affiliates: 'affiliate', fa_referrals: 'referral', fa_payouts: 'payout', fa_payout_transactions: 'transaction', fa_visits: 'visit', fa_customers: 'customer', fa_meta: 'meta', fa_creatives: 'creative' }
+    const slug   = TABLE_MODEL_SLUG2[t] ?? t.replace('fa_', '').replace(/_/g, '-')
     lines.push(`| [\`${meta.class}\`](/database/models/${slug}) | \`${t}\` | ${meta.desc}${proTag} |`)
   }
 
@@ -1926,7 +2006,9 @@ function buildHooksIndexDoc(actionMap, filterMap) {
     '| [Referrals](/hooks/actions/referrals) | Referral creation and status changes |',
     '| [Payouts](/hooks/actions/payouts) | Payout and transaction events |',
     '| [Portal](/hooks/actions/portal) | Customer portal render hooks |',
-    '| [Integrations](/hooks/actions/integrations) | Third-party integration events |',
+    '| [Integrations](/hooks/actions/integrations) | Third-party integration and migration events |',
+    '| [Groups](/hooks/actions/groups) | Affiliate group lifecycle events <span class="pro-badge">PRO</span> |',
+    '| [Creatives](/hooks/actions/creatives) | Creative asset lifecycle events <span class="pro-badge">PRO</span> |',
     '',
     '## Filter Hooks',
     '',
@@ -1936,16 +2018,76 @@ function buildHooksIndexDoc(actionMap, filterMap) {
     '| [Referrals](/hooks/filters/referrals) | Commission and referral data filters |',
     '| [Permissions](/hooks/filters/permissions) | Access control filters |',
     '| [Portal](/hooks/filters/portal) | Affiliate portal UI filters |',
-    '| [Settings](/hooks/filters/settings) | Plugin configuration filters |',
+    '| [Settings](/hooks/filters/settings) | Plugin configuration and admin UI filters |',
     '| [Auth](/hooks/filters/auth) | Registration and login filters |',
     '| [Integrations](/hooks/filters/integrations) | Integration config and data filters |',
+    '| [Groups](/hooks/filters/groups) | Affiliate group data filters <span class="pro-badge">PRO</span> |',
+    '| [Creatives](/hooks/filters/creatives) | Creative asset data filters <span class="pro-badge">PRO</span> |',
+    '',
+  ].join('\n') + '\n'
+}
+
+function buildActionHooksIndexDoc(actionMap) {
+  const actionCount = Object.keys(actionMap).length
+
+  return [
+    '---',
+    'title: Action Hooks',
+    'description: All FluentAffiliate WordPress action hooks, organized by category.',
+    '---',
+    '',
+    '# Action Hooks',
+    '',
+    `FluentAffiliate fires **${actionCount} action hooks** (including dynamic variants). Use \`add_action()\` to hook into these events.`,
+    '',
+    '| Category | Description |',
+    '|----------|-------------|',
+    '| [Affiliates](/hooks/actions/affiliates) | Affiliate lifecycle events — created, updated, status changes, deleted |',
+    '| [Referrals](/hooks/actions/referrals) | Referral creation, status transitions, and deletion |',
+    '| [Payouts](/hooks/actions/payouts) | Payout batch and transaction events |',
+    '| [Portal](/hooks/actions/portal) | Customer portal render hooks |',
+    '| [Integrations](/hooks/actions/integrations) | Third-party integration events and data migration hooks |',
+    '| [Groups](/hooks/actions/groups) | Affiliate group lifecycle events <span class="pro-badge">PRO</span> |',
+    '| [Creatives](/hooks/actions/creatives) | Creative asset lifecycle events <span class="pro-badge">PRO</span> |',
+    '',
+  ].join('\n') + '\n'
+}
+
+function buildFilterHooksIndexDoc(filterMap) {
+  const filterCount = Object.keys(filterMap).length
+
+  return [
+    '---',
+    'title: Filter Hooks',
+    'description: All FluentAffiliate WordPress filter hooks, organized by category.',
+    '---',
+    '',
+    '# Filter Hooks',
+    '',
+    `FluentAffiliate exposes **${filterCount} filter hooks** (including dynamic variants). Use \`add_filter()\` to modify data or behaviour.`,
+    '',
+    '| Category | Description |',
+    '|----------|-------------|',
+    '| [Affiliates](/hooks/filters/affiliates) | Affiliate data, rate calculation, and display filters |',
+    '| [Referrals](/hooks/filters/referrals) | Commission amounts, referral data, and provider URL filters |',
+    '| [Permissions](/hooks/filters/permissions) | Access control and capability checks |',
+    '| [Portal](/hooks/filters/portal) | Affiliate portal UI, menus, and smart-code filters |',
+    '| [Settings](/hooks/filters/settings) | Plugin configuration, admin UI, and JS variable filters |',
+    '| [Auth](/hooks/filters/auth) | Registration form, login, and reserved username filters |',
+    '| [Integrations](/hooks/filters/integrations) | Integration configuration, menu labels, and product option filters |',
+    '| [Groups](/hooks/filters/groups) | Affiliate group data filters <span class="pro-badge">PRO</span> |',
+    '| [Creatives](/hooks/filters/creatives) | Creative asset data filters <span class="pro-badge">PRO</span> |',
     '',
   ].join('\n') + '\n'
 }
 
 // ---------------------------------------------------------------------------
-// Markdown generators — REST API
+// REST API — metadata, helpers, and generators
 // ---------------------------------------------------------------------------
+
+// Paths for generated output
+const openapiRoot  = join(repoRoot, 'public', 'openapi')
+const generatedRoot = join(repoRoot, '.generated')
 
 const REST_DESCRIPTIONS = {
   // Affiliates
@@ -2062,125 +2204,1439 @@ const REST_DESCRIPTIONS = {
   'DELETE /settings/managers/{id}':        'Remove an affiliate manager.',
 }
 
-function buildRestApiDoc(prefix, routes, overrideTitle = null) {
-  if (routes.length === 0) return null
+// ---------------------------------------------------------------------------
+// REST API module metadata
+// ---------------------------------------------------------------------------
 
-  const prefixTitle = overrideTitle ?? (prefix.charAt(0).toUpperCase() + prefix.slice(1))
-  const lines = [
-    '---',
-    `title: ${prefixTitle} API`,
-    `description: REST API endpoints for ${prefixTitle}.`,
-    '---',
-    '',
-    `# ${prefixTitle}`,
-    '',
-    '**Base URL:** `https://yoursite.com/wp-json/fluent-affiliate/v2`',
-    '',
-    '## Endpoints',
-    '',
-    '| Method | Path | Description |',
-    '|--------|------|-------------|',
-  ]
+const REST_MODULE_META = {
+  affiliates: {
+    title: 'Affiliates API',
+    description: 'Affiliate listing, creation, updates, deletion, and per-affiliate statistics and transactions.',
+    auth: 'These routes are protected by `AffiliatePolicy`. Admin users have full access; affiliate-level users require the `read_all_affiliates` capability.',
+    isPro: false,
+  },
+  referrals: {
+    title: 'Referrals API',
+    description: 'Referral listing, manual creation, updates, deletion, and CSV export.',
+    auth: 'Referral routes are protected by `ReferralPolicy`. Admin users have full access; affiliate-level users require `read_all_referrals`.',
+    isPro: false,
+  },
+  payouts: {
+    title: 'Payouts API',
+    description: 'Payout batch management, transaction operations, payout processing, and CSV export.',
+    auth: 'Payout routes are protected by `PayoutPolicy`. Admin users have full access; affiliate-level users require `read_all_payouts`.',
+    isPro: false,
+  },
+  visits: {
+    title: 'Visits API',
+    description: 'Affiliate visit tracking records — listing and CSV export.',
+    auth: 'Visit routes are protected by `VisitPolicy`. Admin users have full access; affiliate-level users require `read_all_visits`.',
+    isPro: false,
+  },
+  portal: {
+    title: 'Portal API',
+    description: 'Affiliate portal data — stats, referrals, transactions, visits, and settings for the currently authenticated affiliate.',
+    auth: 'Portal routes use `UserPolicy` and always return data scoped to the currently authenticated affiliate.',
+    isPro: false,
+  },
+  reports: {
+    title: 'Reports API',
+    description: 'Dashboard statistics, chart data, advanced commerce reports, and report provider listing.',
+    auth: 'Reports routes use `UserPolicy`. Dashboard stats require admin access; advanced report access depends on user capabilities.',
+    isPro: false,
+  },
+  settings: {
+    title: 'Settings API',
+    description: 'Email configuration, feature settings, integrations, referral config, page management, migrations, and registration fields.',
+    auth: 'All settings routes are protected by `AdminPolicy` and require WordPress administrator access.',
+    isPro: false,
+  },
+  groups: {
+    title: 'Affiliate Groups API',
+    description: 'Affiliate group CRUD operations, member listing, overview stats, and group statistics.',
+    auth: 'Affiliate group routes are protected by `AdminPolicy` and require WordPress administrator access.',
+    isPro: true,
+  },
+  creatives: {
+    title: 'Creatives API',
+    description: 'Creative asset management (admin) and portal creative retrieval for authenticated affiliates.',
+    auth: 'Admin creative routes are protected by `AdminPolicy`. The portal creatives endpoint uses `UserPolicy`.',
+    isPro: true,
+  },
+  'connected-sites': {
+    title: 'Connected Sites API',
+    description: 'Connected site configuration management, token issuance, and site disconnect operations.',
+    auth: 'Connected Sites routes are protected by `AdminPolicy` and require WordPress administrator access.',
+    isPro: true,
+  },
+  license: {
+    title: 'License API',
+    description: 'Pro license status retrieval, activation, and deactivation.',
+    auth: 'License routes are protected by `AdminPolicy` and require WordPress administrator access.',
+    isPro: true,
+  },
+}
 
-  for (const r of routes) {
-    const fullPath = `/${prefix}${r.path}`
-    const key      = `${r.method} ${fullPath}`
-    const desc     = REST_DESCRIPTIONS[key] ?? `${r.controller}::${r.action}`
-    lines.push(`| \`${r.method}\` | \`${fullPath}\` | ${desc} |`)
+// ---------------------------------------------------------------------------
+// REST API helpers
+// ---------------------------------------------------------------------------
+
+function humanizeSlug(value) {
+  return value
+    .replace(/[-_]/g, ' ')
+    .replace(/\bapi\b/gi, 'API')
+    .replace(/\bid\b/gi, 'ID')
+    .replace(/\burl\b/gi, 'URL')
+    .replace(/\bhtml\b/gi, 'HTML')
+    .replace(/\bjson\b/gi, 'JSON')
+    .replace(/\bcsv\b/gi, 'CSV')
+    .replace(/\bcrm\b/gi, 'CRM')
+    .replace(/\bwp\b/gi, 'WP')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (match) => match.toUpperCase())
+}
+
+function kebabToCamel(value) {
+  return value.replace(/-([a-z])/g, (_, char) => char.toUpperCase())
+}
+
+function normalizeRoutePathParams(path) {
+  return path.replace(/\{(\w+)\}/g, '{$1}')
+}
+
+function getFullPath(route) {
+  const path = route.path === '' ? '' : (route.path.startsWith('/') ? route.path : `/${route.path}`)
+  return `/${route.prefix}${path}`
+}
+
+function classifyRoute(route) {
+  const { prefix, controller } = route
+  if (prefix === 'affiliates') return 'affiliates'
+  if (prefix === 'referrals') return 'referrals'
+  if (prefix === 'payouts') return 'payouts'
+  if (prefix === 'visits') return 'visits'
+  if (prefix === 'reports') return 'reports'
+  if (prefix === 'portal') {
+    if (controller === 'CreativeController') return 'creatives'
+    return 'portal'
   }
-
-  lines.push('')
-
-  // Detailed sections for each route
-  for (const r of routes) {
-    const fullPath = `/${prefix}${r.path}`
-    const key      = `${r.method} ${fullPath}`
-    const desc     = REST_DESCRIPTIONS[key] ?? `${r.controller}::${r.action}`
-    const anchor   = `${r.method.toLowerCase()}-${fullPath.replace(/\//g, '-').replace(/[{}]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}`
-
-    lines.push(`## \`${r.method} ${fullPath}\``, '', desc, '', `**Auth:** ${policyAuth(r.policy)}  `, `**Controller:** \`${r.controller}::${r.action}\``, '')
-
-    const curlPath = fullPath.replace(/{id}/g, '1').replace(/{[^}]+}/g, 'VALUE')
-    lines.push('```bash', `curl -X ${r.method} \\`, `  https://yoursite.com/wp-json/fluent-affiliate/v2${curlPath} \\`, `  -H "X-WP-Nonce: YOUR_NONCE"`, '```', '')
+  if (prefix === 'settings') {
+    if (controller === 'AffiliateGroupController') return 'groups'
+    if (controller === 'CreativeController') return 'creatives'
+    if (controller === 'DomainController') return 'connected-sites'
+    if (controller === 'LicenseController') return 'license'
+    return 'settings'
   }
+  return prefix
+}
 
-  return lines.join('\n') + '\n'
+function renderSourceLabel(isPro) {
+  return isPro ? '<span class="pro-badge">PRO</span>' : 'Core'
 }
 
 function policyAuth(policy) {
   const map = {
     AdminPolicy:     'WordPress administrator (`manage_options`)',
-    AffiliatePolicy: 'Admin or affiliate with `fa_view_affiliates` capability',
-    ReferralPolicy:  'Admin or affiliate with `fa_view_referrals` capability',
-    PayoutPolicy:    'Admin or affiliate with `fa_view_payouts` capability',
-    VisitPolicy:     'Admin or affiliate with `fa_view_visits` capability',
+    AffiliatePolicy: 'Admin or affiliate with `read_all_affiliates` capability',
+    ReferralPolicy:  'Admin or affiliate with `read_all_referrals` capability',
+    PayoutPolicy:    'Admin or affiliate with `read_all_payouts` capability',
+    VisitPolicy:     'Admin or affiliate with `read_all_visits` capability',
     UserPolicy:      'Any authenticated WordPress user',
   }
   return map[policy] ?? policy
 }
 
-function buildRestApiIndexDoc(routes) {
-  const coreResources = [
-    { slug: 'affiliates', prefix: 'affiliates', policy: 'AffiliatePolicy' },
-    { slug: 'referrals',  prefix: 'referrals',  policy: 'ReferralPolicy' },
-    { slug: 'payouts',    prefix: 'payouts',     policy: 'PayoutPolicy' },
-    { slug: 'visits',     prefix: 'visits',      policy: 'VisitPolicy' },
-    { slug: 'portal',     prefix: 'portal',      policy: 'UserPolicy' },
-    { slug: 'reports',    prefix: 'reports',     policy: 'UserPolicy' },
-    { slug: 'settings',   prefix: 'settings',    policy: 'AdminPolicy' },
+// ---------------------------------------------------------------------------
+// Operation slug map
+// ---------------------------------------------------------------------------
+
+const OPERATION_SLUG_MAP = [
+  // affiliates
+  { module: 'affiliates', method: 'GET',    path: /^\/affiliates$/, slug: 'list-affiliates' },
+  { module: 'affiliates', method: 'GET',    path: /^\/affiliates\/export$/, slug: 'export-affiliates' },
+  { module: 'affiliates', method: 'POST',   path: /^\/affiliates$/, slug: 'create-affiliate' },
+  { module: 'affiliates', method: 'GET',    path: /^\/affiliates\/.+\/transactions$/, slug: 'list-affiliate-transactions' },
+  { module: 'affiliates', method: 'GET',    path: /^\/affiliates\/.+\/visits$/, slug: 'list-affiliate-visits' },
+  { module: 'affiliates', method: 'GET',    path: /^\/affiliates\/.+\/referrals$/, slug: 'list-affiliate-referrals' },
+  { module: 'affiliates', method: 'GET',    path: /^\/affiliates\/.+\/stats$/, slug: 'get-affiliate-stats' },
+  { module: 'affiliates', method: 'GET',    path: /^\/affiliates\/.+\/statistics$/, slug: 'get-affiliate-statistics' },
+  { module: 'affiliates', method: 'GET',    path: /^\/affiliates\/.+$/, slug: 'get-affiliate' },
+  { module: 'affiliates', method: 'DELETE', path: /^\/affiliates\/.+$/, slug: 'delete-affiliate' },
+  { module: 'affiliates', method: 'PATCH',  path: /^\/affiliates\/.+\/status$/, slug: 'update-affiliate-status' },
+  { module: 'affiliates', method: 'PATCH',  path: /^\/affiliates\/.+$/, slug: 'update-affiliate' },
+  // referrals
+  { module: 'referrals', method: 'GET',    path: /^\/referrals$/, slug: 'list-referrals' },
+  { module: 'referrals', method: 'GET',    path: /^\/referrals\/export$/, slug: 'export-referrals' },
+  { module: 'referrals', method: 'POST',   path: /^\/referrals$/, slug: 'create-referral' },
+  { module: 'referrals', method: 'GET',    path: /^\/referrals\/.+$/, slug: 'get-referral' },
+  { module: 'referrals', method: 'PATCH',  path: /^\/referrals\/.+$/, slug: 'update-referral' },
+  { module: 'referrals', method: 'DELETE', path: /^\/referrals\/.+$/, slug: 'delete-referral' },
+  // payouts
+  { module: 'payouts', method: 'GET',    path: /^\/payouts$/, slug: 'list-payouts' },
+  { module: 'payouts', method: 'POST',   path: /^\/payouts\/validate-payout-config$/, slug: 'validate-payout-config' },
+  { module: 'payouts', method: 'POST',   path: /^\/payouts\/process-payout$/, slug: 'process-payout' },
+  { module: 'payouts', method: 'GET',    path: /^\/payouts\/.+\/referrals$/, slug: 'list-payout-referrals' },
+  { module: 'payouts', method: 'GET',    path: /^\/payouts\/.+\/transactions-export$/, slug: 'export-payout-transactions' },
+  { module: 'payouts', method: 'GET',    path: /^\/payouts\/.+\/transactions$/, slug: 'list-payout-transactions' },
+  { module: 'payouts', method: 'DELETE', path: /^\/payouts\/.+\/transactions\/.+$/, slug: 'delete-payout-transaction' },
+  { module: 'payouts', method: 'PATCH',  path: /^\/payouts\/.+\/transactions\/bulk-action$/, slug: 'bulk-update-payout-transactions' },
+  { module: 'payouts', method: 'PATCH',  path: /^\/payouts\/.+\/transactions\/.+$/, slug: 'update-payout-transaction' },
+  { module: 'payouts', method: 'GET',    path: /^\/payouts\/.+$/, slug: 'get-payout' },
+  { module: 'payouts', method: 'PATCH',  path: /^\/payouts\/.+$/, slug: 'update-payout' },
+  // visits
+  { module: 'visits', method: 'GET', path: /^\/visits$/, slug: 'list-visits' },
+  { module: 'visits', method: 'GET', path: /^\/visits\/export$/, slug: 'export-visits' },
+  // portal
+  { module: 'portal', method: 'GET',  path: /^\/portal\/stats$/, slug: 'get-portal-stats' },
+  { module: 'portal', method: 'GET',  path: /^\/portal\/referrals$/, slug: 'list-portal-referrals' },
+  { module: 'portal', method: 'GET',  path: /^\/portal\/transactions$/, slug: 'list-portal-transactions' },
+  { module: 'portal', method: 'GET',  path: /^\/portal\/visits$/, slug: 'list-portal-visits' },
+  { module: 'portal', method: 'GET',  path: /^\/portal\/settings$/, slug: 'get-portal-settings' },
+  { module: 'portal', method: 'POST', path: /^\/portal\/settings$/, slug: 'update-portal-settings' },
+  // reports
+  { module: 'reports', method: 'GET', path: /^\/reports\/advanced-providers$/, slug: 'list-advanced-providers' },
+  { module: 'reports', method: 'GET', path: /^\/reports\/commerce-reports\/.+$/, slug: 'get-commerce-report' },
+  { module: 'reports', method: 'GET', path: /^\/reports\/dashboard-stats$/, slug: 'get-dashboard-stats' },
+  { module: 'reports', method: 'GET', path: /^\/reports\/dashboard-chart-stats$/, slug: 'get-dashboard-chart-stats' },
+  // settings
+  { module: 'settings', method: 'GET',   path: /^\/settings\/email-config\/emails$/, slug: 'list-email-templates' },
+  { module: 'settings', method: 'POST',  path: /^\/settings\/email-config\/emails$/, slug: 'update-email-templates' },
+  { module: 'settings', method: 'PATCH', path: /^\/settings\/email-config\/emails$/, slug: 'update-email-template' },
+  { module: 'settings', method: 'GET',   path: /^\/settings\/email-config$/, slug: 'get-email-config' },
+  { module: 'settings', method: 'POST',  path: /^\/settings\/email-config$/, slug: 'update-email-config' },
+  { module: 'settings', method: 'GET',   path: /^\/settings\/features\/.+$/, slug: 'get-feature-settings' },
+  { module: 'settings', method: 'POST',  path: /^\/settings\/features\/.+$/, slug: 'update-feature-settings' },
+  { module: 'settings', method: 'GET',   path: /^\/settings\/features$/, slug: 'list-features' },
+  { module: 'settings', method: 'POST',  path: /^\/settings\/addons\/install$/, slug: 'install-addon' },
+  { module: 'settings', method: 'GET',   path: /^\/settings\/integrations$/, slug: 'list-integrations' },
+  { module: 'settings', method: 'GET',   path: /^\/settings\/integration\/config$/, slug: 'get-integration-config' },
+  { module: 'settings', method: 'POST',  path: /^\/settings\/integration\/config$/, slug: 'save-integration-config' },
+  { module: 'settings', method: 'POST',  path: /^\/settings\/integration\/update-status$/, slug: 'update-integration-status' },
+  { module: 'settings', method: 'GET',   path: /^\/settings\/integration\/product_cat_options$/, slug: 'get-integration-product-options' },
+  { module: 'settings', method: 'GET',   path: /^\/settings\/pages$/, slug: 'list-pages' },
+  { module: 'settings', method: 'POST',  path: /^\/settings\/create-page$/, slug: 'create-page' },
+  { module: 'settings', method: 'GET',   path: /^\/settings\/referral-config$/, slug: 'get-referral-config' },
+  { module: 'settings', method: 'POST',  path: /^\/settings\/referral-config$/, slug: 'update-referral-config' },
+  { module: 'settings', method: 'GET',   path: /^\/settings\/migrations\/status$/, slug: 'get-migration-status' },
+  { module: 'settings', method: 'GET',   path: /^\/settings\/migrations\/statistics$/, slug: 'get-migration-statistics' },
+  { module: 'settings', method: 'GET',   path: /^\/settings\/migrations$/, slug: 'list-migrations' },
+  { module: 'settings', method: 'POST',  path: /^\/settings\/migrations\/start$/, slug: 'start-migration' },
+  { module: 'settings', method: 'POST',  path: /^\/settings\/migrations\/wipe$/, slug: 'wipe-data' },
+  { module: 'settings', method: 'GET',   path: /^\/settings\/options\/affiliate-groups$/, slug: 'get-affiliate-group-options' },
+  { module: 'settings', method: 'GET',   path: /^\/settings\/options\/affiliates$/, slug: 'get-affiliate-options' },
+  { module: 'settings', method: 'GET',   path: /^\/settings\/options\/users$/, slug: 'get-user-options' },
+  { module: 'settings', method: 'GET',   path: /^\/settings\/registration-fields$/, slug: 'get-registration-fields' },
+  { module: 'settings', method: 'POST',  path: /^\/settings\/registration-fields$/, slug: 'update-registration-fields' },
+  { module: 'settings', method: 'GET',   path: /^\/settings\/managers$/, slug: 'list-managers' },
+  { module: 'settings', method: 'POST',  path: /^\/settings\/managers$/, slug: 'update-managers' },
+  { module: 'settings', method: 'DELETE', path: /^\/settings\/managers\/.+$/, slug: 'delete-manager' },
+  // groups (Pro)
+  { module: 'groups', method: 'GET',    path: /^\/settings\/groups$/, slug: 'list-groups' },
+  { module: 'groups', method: 'POST',   path: /^\/settings\/groups$/, slug: 'create-group' },
+  { module: 'groups', method: 'GET',    path: /^\/settings\/groups\/.+\/affiliates$/, slug: 'list-group-affiliates' },
+  { module: 'groups', method: 'GET',    path: /^\/settings\/groups\/.+\/overview$/, slug: 'get-group-overview' },
+  { module: 'groups', method: 'GET',    path: /^\/settings\/groups\/.+\/statistics$/, slug: 'get-group-statistics' },
+  { module: 'groups', method: 'GET',    path: /^\/settings\/groups\/.+$/, slug: 'get-group' },
+  { module: 'groups', method: 'PATCH',  path: /^\/settings\/groups\/.+$/, slug: 'update-group' },
+  { module: 'groups', method: 'DELETE', path: /^\/settings\/groups\/.+$/, slug: 'delete-group' },
+  // creatives (Pro)
+  { module: 'creatives', method: 'GET',    path: /^\/settings\/creatives$/, slug: 'list-creatives' },
+  { module: 'creatives', method: 'POST',   path: /^\/settings\/creatives$/, slug: 'create-creative' },
+  { module: 'creatives', method: 'GET',    path: /^\/settings\/creatives\/.+$/, slug: 'get-creative' },
+  { module: 'creatives', method: 'PATCH',  path: /^\/settings\/creatives\/.+$/, slug: 'update-creative' },
+  { module: 'creatives', method: 'DELETE', path: /^\/settings\/creatives\/.+$/, slug: 'delete-creative' },
+  { module: 'creatives', method: 'GET',    path: /^\/portal\/creatives$/, slug: 'list-portal-creatives' },
+  // connected-sites (Pro)
+  { module: 'connected-sites', method: 'GET',   path: /^\/settings\/connected-sites-config$/, slug: 'get-connected-sites-config' },
+  { module: 'connected-sites', method: 'PATCH', path: /^\/settings\/connected-sites-config\/update$/, slug: 'update-connected-site' },
+  { module: 'connected-sites', method: 'PATCH', path: /^\/settings\/connected-sites-config$/, slug: 'update-connected-sites-status' },
+  { module: 'connected-sites', method: 'POST',  path: /^\/settings\/connected-sites-config\/issue$/, slug: 'issue-site-token' },
+  { module: 'connected-sites', method: 'POST',  path: /^\/settings\/connected-sites-config\/disconnect$/, slug: 'disconnect-site' },
+  // license (Pro)
+  { module: 'license', method: 'GET',    path: /^\/settings\/license$/, slug: 'get-license' },
+  { module: 'license', method: 'POST',   path: /^\/settings\/license$/, slug: 'save-license' },
+  { module: 'license', method: 'DELETE', path: /^\/settings\/license$/, slug: 'delete-license' },
+]
+
+function buildOperationAlias(module, method, fullPath) {
+  const found = OPERATION_SLUG_MAP.find(
+    (entry) => entry.module === module && entry.method === method && entry.path.test(fullPath),
+  )
+  if (found) return found.slug
+  return `${method.toLowerCase()}${fullPath.replace(/\//g, '-').replace(/[{}]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}`
+}
+
+function buildOperationMeta(route) {
+  const fullPath = getFullPath(route)
+  const slug = buildOperationAlias(route.module, route.method, fullPath)
+  const title = humanizeSlug(slug)
+  const operationId = kebabToCamel(slug)
+  const description = REST_DESCRIPTIONS[`${route.method} ${fullPath}`]
+    ?? `${title}.`
+  return { slug, title, operationId, description }
+}
+
+// ---------------------------------------------------------------------------
+// OpenAPI parameter helpers
+// ---------------------------------------------------------------------------
+
+function extractPathParams(routePath) {
+  const params = []
+  for (const m of routePath.matchAll(/\{(\w+)\}/g)) {
+    const name = m[1]
+    params.push({
+      name,
+      in: 'path',
+      required: true,
+      description: `The ${name.replace(/_/g, ' ')}.`,
+      schema: { type: 'integer' },
+    })
+  }
+  return params
+}
+
+function getDefaultQueryParams(slug) {
+  if (!slug.startsWith('list-') && !slug.startsWith('export-')) return []
+  return [
+    { name: 'per_page', in: 'query', required: false, description: 'Number of items per page.', schema: { type: 'integer', default: 15 } },
+    { name: 'page', in: 'query', required: false, description: 'Page number (1-based).', schema: { type: 'integer', default: 1 } },
+    { name: 'search', in: 'query', required: false, description: 'Search query string.', schema: { type: 'string' } },
+    { name: 'status', in: 'query', required: false, description: 'Filter by status.', schema: { type: 'string' } },
+  ]
+}
+
+// ---------------------------------------------------------------------------
+// Markdown generators — REST API
+// ---------------------------------------------------------------------------
+
+function buildRestApiModuleDoc(module, moduleRoutes) {
+  const meta = REST_MODULE_META[module]
+  if (!meta) return null
+
+  if (!moduleRoutes.length) {
+    return [
+      '---',
+      `title: ${meta.title}`,
+      `description: ${meta.description}`,
+      '---',
+      '',
+      `# ${meta.title}${meta.isPro ? ' <span class="pro-badge">PRO</span>' : ''}`,
+      '',
+      meta.description,
+      '',
+      '## Status',
+      '',
+      'No REST routes are currently registered for this module in the route files scanned by the generator.',
+      '',
+    ].join('\n') + '\n'
+  }
+
+  const lines = [
+    '---',
+    `title: ${meta.title}`,
+    `description: ${meta.description}`,
+    '---',
+    '',
+    `# ${meta.title}${meta.isPro ? ' <span class="pro-badge">PRO</span>' : ''}`,
+    '',
+    meta.description,
+    '',
+    '## Authentication',
+    '',
+    meta.auth,
+    '',
+    '## Endpoints',
+    '',
+    '| Method | Path | Edition | Operation | Controller |',
+    '| --- | --- | --- | --- | --- |',
   ]
 
-  const proResources = [
-    { slug: 'groups',          title: 'Affiliate Groups', policy: 'AdminPolicy', isPro: true },
-    { slug: 'creatives',       title: 'Creatives',        policy: 'AdminPolicy', isPro: true },
-    { slug: 'connected-sites', title: 'Connected Sites',  policy: 'AdminPolicy', isPro: true },
-    { slug: 'license',         title: 'License',          policy: 'AdminPolicy', isPro: true },
-  ]
+  for (const route of moduleRoutes) {
+    const fullPath = getFullPath(route)
+    const edition = renderSourceLabel(route.isPro)
+    lines.push(
+      `| \`${route.method}\` | \`${fullPath}\` | ${edition} | [${route.title}](/restapi/operations/${module}/${route.slug}) | \`${route.controller}@${route.action}\` |`,
+    )
+  }
+
+  lines.push('')
+  return lines.join('\n') + '\n'
+}
+
+function buildOperationDoc(route) {
+  const fullPath = getFullPath(route)
+  const edition = renderSourceLabel(route.isPro)
+  const routeSourceFile = route.isPro
+    ? 'fluent-affiliate-pro/app/Http/Routes/api.php'
+    : 'app/Http/Routes/api.php'
+
+  return [
+    '---',
+    `title: ${route.title}`,
+    `description: "${route.description.replace(/"/g, '\\"')}"`,
+    'outline: false',
+    'aside: false',
+    '---',
+    '## Endpoint',
+    '',
+    `- **Method:** \`${route.method}\``,
+    `- **Path:** \`${fullPath}\``,
+    `- **Edition:** ${edition}`,
+    `- **Controller:** \`${route.controller}@${route.action}\``,
+    `- **Route source:** \`${routeSourceFile}\``,
+    '',
+    `<OAOperation operationId="${route.operationId}" specUrl="/openapi/public/${route.module}/${route.slug}.json" />`,
+    '',
+  ].join('\n')
+}
+
+// ---------------------------------------------------------------------------
+// Response schemas — keyed by operation slug
+// ---------------------------------------------------------------------------
+
+const affiliateObject = {
+  type: 'object',
+  properties: {
+    id:               { type: 'integer' },
+    user_id:          { type: 'integer' },
+    status:           { type: 'string', enum: ['active', 'pending', 'rejected', 'inactive'] },
+    affiliate_code:   { type: 'string' },
+    rate:             { type: 'string' },
+    rate_type:        { type: 'string', enum: ['percentage', 'flat'] },
+    earnings_balance: { type: 'string' },
+    total_paid:       { type: 'string' },
+    total_unpaid:     { type: 'string' },
+    created_at:       { type: 'string', format: 'date-time' },
+    updated_at:       { type: 'string', format: 'date-time' },
+  },
+}
+
+const affiliateDetailObject = {
+  type: 'object',
+  properties: {
+    ...affiliateObject.properties,
+    bank_details:      { type: 'object' },
+    rate_details:      { type: 'array', items: { type: 'object' } },
+    widgets:           { type: 'array', items: { type: 'object' } },
+    attached_coupons:  { type: 'array', items: { type: 'object' } },
+    share_url:         { type: 'string' },
+  },
+}
+
+function paginatedSchema(itemSchema) {
+  return {
+    type: 'object',
+    properties: {
+      data:         { type: 'array', items: itemSchema },
+      total:        { type: 'integer' },
+      per_page:     { type: 'integer' },
+      current_page: { type: 'integer' },
+    },
+  }
+}
+
+const referralObject = {
+  type: 'object',
+  properties: {
+    id:           { type: 'integer' },
+    affiliate_id: { type: 'integer' },
+    visit_id:     { type: 'integer', nullable: true },
+    order_id:     { type: 'string' },
+    status:       { type: 'string', enum: ['pending', 'approved', 'rejected', 'paid'] },
+    amount:       { type: 'string' },
+    currency:     { type: 'string' },
+    provider:     { type: 'string' },
+    provider_url: { type: 'string' },
+    created_at:   { type: 'string', format: 'date-time' },
+    updated_at:   { type: 'string', format: 'date-time' },
+  },
+}
+
+const transactionObject = {
+  type: 'object',
+  properties: {
+    id:               { type: 'integer' },
+    payout_id:        { type: 'integer' },
+    affiliate_id:     { type: 'integer' },
+    status:           { type: 'string', enum: ['pending', 'paid', 'failed'] },
+    amount:           { type: 'string' },
+    currency:         { type: 'string' },
+    currency_symbol:  { type: 'string' },
+    referrals_count:  { type: 'integer' },
+    created_at:       { type: 'string', format: 'date-time' },
+    updated_at:       { type: 'string', format: 'date-time' },
+  },
+}
+
+const visitObject = {
+  type: 'object',
+  properties: {
+    id:           { type: 'integer' },
+    affiliate_id: { type: 'integer' },
+    url:          { type: 'string' },
+    ip:           { type: 'string' },
+    created_at:   { type: 'string', format: 'date-time' },
+    referrals:    { type: 'array', items: { type: 'object', properties: { id: { type: 'integer' }, visit_id: { type: 'integer' }, status: { type: 'string' }, amount: { type: 'string' }, currency: { type: 'string' } } } },
+  },
+}
+
+const payoutObject = {
+  type: 'object',
+  properties: {
+    id:                  { type: 'integer' },
+    status:              { type: 'string', enum: ['pending', 'paid', 'failed'] },
+    amount:              { type: 'string' },
+    currency:            { type: 'string' },
+    referrals_count:     { type: 'integer' },
+    transactions_count:  { type: 'integer' },
+    affiliates_count:    { type: 'integer' },
+    created_at:          { type: 'string', format: 'date-time' },
+    updated_at:          { type: 'string', format: 'date-time' },
+  },
+}
+
+const groupObject = {
+  type: 'object',
+  properties: {
+    id:               { type: 'integer' },
+    name:             { type: 'string' },
+    description:      { type: 'string' },
+    status:           { type: 'string' },
+    affiliates_count: { type: 'integer' },
+    visits_count:     { type: 'integer' },
+    total_earnings:   { type: 'string' },
+    created_at:       { type: 'string', format: 'date-time' },
+    updated_at:       { type: 'string', format: 'date-time' },
+  },
+}
+
+const creativeObject = {
+  type: 'object',
+  properties: {
+    id:          { type: 'integer' },
+    title:       { type: 'string' },
+    type:        { type: 'string', enum: ['banner', 'text', 'html'] },
+    content:     { type: 'string' },
+    status:      { type: 'string', enum: ['active', 'inactive'] },
+    created_at:  { type: 'string', format: 'date-time' },
+    updated_at:  { type: 'string', format: 'date-time' },
+  },
+}
+
+const messageOnlySchema = {
+  type: 'object',
+  properties: {
+    message: { type: 'string' },
+  },
+  required: ['message'],
+}
+
+const RESPONSE_SCHEMAS = {
+  // ── Affiliates ──────────────────────────────────────────────────────────
+  'list-affiliates': {
+    type: 'object',
+    properties: {
+      affiliates: paginatedSchema(affiliateObject),
+    },
+  },
+  'create-affiliate': {
+    type: 'object',
+    properties: {
+      message:   { type: 'string' },
+      affiliate: affiliateObject,
+    },
+    required: ['message', 'affiliate'],
+  },
+  'get-affiliate': {
+    type: 'object',
+    properties: {
+      affiliate: affiliateDetailObject,
+    },
+  },
+  'update-affiliate': {
+    type: 'object',
+    properties: {
+      message:   { type: 'string' },
+      affiliate: affiliateObject,
+    },
+    required: ['message', 'affiliate'],
+  },
+  'update-affiliate-status': {
+    type: 'object',
+    properties: {
+      message:   { type: 'string' },
+      affiliate: affiliateObject,
+    },
+    required: ['message', 'affiliate'],
+  },
+  'delete-affiliate': messageOnlySchema,
+  'export-affiliates': {
+    type: 'object',
+    properties: {
+      affiliates: { type: 'array', items: affiliateObject },
+      limited:    { type: 'boolean' },
+      total:      { type: 'integer' },
+    },
+  },
+  'list-affiliate-referrals': {
+    type: 'object',
+    properties: {
+      referrals: paginatedSchema(referralObject),
+    },
+  },
+  'list-affiliate-visits': {
+    type: 'object',
+    properties: {
+      visits: paginatedSchema(visitObject),
+    },
+  },
+  'list-affiliate-transactions': {
+    type: 'object',
+    properties: {
+      transactions: paginatedSchema(transactionObject),
+    },
+  },
+  'get-affiliate-stats': {
+    type: 'object',
+    properties: {
+      stats: {
+        type: 'object',
+        properties: {
+          total_paid:       { type: 'object', properties: { title: { type: 'string' }, amount: { type: 'string' }, is_currency: { type: 'boolean' } } },
+          total_unpaid:     { type: 'object', properties: { title: { type: 'string' }, amount: { type: 'string' }, is_currency: { type: 'boolean' } } },
+          total_order_value:{ type: 'object', properties: { title: { type: 'string' }, amount: { type: 'string' }, is_currency: { type: 'boolean' } } },
+          conversion_rate:  { type: 'object', properties: { title: { type: 'string' }, amount: { type: 'string' }, is_number: { type: 'boolean' } } },
+          total_visits:     { type: 'object', properties: { title: { type: 'string' }, amount: { type: 'integer' }, is_number: { type: 'boolean' } } },
+          total_referrals:  { type: 'object', properties: { title: { type: 'string' }, amount: { type: 'integer' }, is_number: { type: 'boolean' } } },
+        },
+      },
+    },
+  },
+  'get-affiliate-statistics': {
+    type: 'object',
+    properties: {
+      data:   { type: 'array', items: { type: 'object' } },
+      labels: { type: 'array', items: { type: 'string' } },
+    },
+  },
+  // ── Referrals ────────────────────────────────────────────────────────────
+  'list-referrals': {
+    type: 'object',
+    properties: {
+      referrals: paginatedSchema(referralObject),
+    },
+  },
+  'create-referral': {
+    type: 'object',
+    properties: {
+      referral: referralObject,
+      message:  { type: 'string' },
+    },
+    required: ['referral', 'message'],
+  },
+  'get-referral': {
+    type: 'object',
+    properties: {
+      referral: {
+        type: 'object',
+        properties: {
+          ...referralObject.properties,
+          visit:    { type: 'object', nullable: true },
+          payout:   { type: 'object', nullable: true },
+          customer: { type: 'object', nullable: true },
+        },
+      },
+    },
+  },
+  'update-referral': {
+    type: 'object',
+    properties: {
+      referral: referralObject,
+      message:  { type: 'string' },
+    },
+    required: ['referral', 'message'],
+  },
+  'delete-referral': messageOnlySchema,
+  'export-referrals': {
+    type: 'object',
+    properties: {
+      referrals: { type: 'array', items: referralObject },
+      limited:   { type: 'boolean' },
+      total:     { type: 'integer' },
+    },
+  },
+  // ── Payouts ──────────────────────────────────────────────────────────────
+  'list-payouts': {
+    type: 'object',
+    properties: {
+      payouts: paginatedSchema(payoutObject),
+    },
+  },
+  'get-payout': {
+    type: 'object',
+    properties: {
+      payout: {
+        type: 'object',
+        properties: {
+          ...payoutObject.properties,
+          creator: { type: 'object', nullable: true },
+        },
+      },
+    },
+  },
+  'update-payout': {
+    type: 'object',
+    properties: {
+      payout:  payoutObject,
+      message: { type: 'string' },
+    },
+    required: ['payout', 'message'],
+  },
+  'validate-payout-config': {
+    type: 'object',
+    properties: {
+      payable_affiliates:    { type: 'array', items: affiliateObject },
+      payable_total_amount:  { type: 'number' },
+      config: {
+        type: 'object',
+        properties: {
+          start_date:    { type: 'string', format: 'date' },
+          end_date:      { type: 'string', format: 'date' },
+          min_payout:    { type: 'number' },
+          affiliate_ids: { type: 'array', items: { type: 'integer' } },
+        },
+      },
+    },
+  },
+  'process-payout': {
+    type: 'object',
+    properties: {
+      payout:  payoutObject,
+      message: { type: 'string' },
+    },
+    required: ['payout', 'message'],
+  },
+  'list-payout-transactions': {
+    type: 'object',
+    properties: {
+      transactions:      paginatedSchema(transactionObject),
+      processing_count:  { type: 'integer' },
+    },
+  },
+  'update-payout-transaction': {
+    type: 'object',
+    properties: {
+      transaction:      transactionObject,
+      processing_count: { type: 'integer' },
+      message:          { type: 'string' },
+    },
+    required: ['transaction', 'processing_count', 'message'],
+  },
+  'bulk-update-payout-transactions': {
+    type: 'object',
+    properties: {
+      processing_count: { type: 'integer' },
+      message:          { type: 'string' },
+    },
+  },
+  'delete-payout-transaction': {
+    type: 'object',
+    properties: {
+      payout:  payoutObject,
+      message: { type: 'string' },
+    },
+    required: ['payout', 'message'],
+  },
+  'list-payout-referrals': {
+    type: 'object',
+    properties: {
+      referrals:      paginatedSchema(referralObject),
+      affiliate_lists: { type: 'array', items: affiliateObject, nullable: true },
+    },
+  },
+  'export-payout-transactions': {
+    type: 'object',
+    properties: {
+      transactions: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            affiliate_id:   { type: 'integer' },
+            affiliate_name: { type: 'string' },
+            email:          { type: 'string' },
+            payout_email:   { type: 'string' },
+            amount:         { type: 'number' },
+            currency:       { type: 'string' },
+          },
+        },
+      },
+    },
+  },
+  // ── Visits ───────────────────────────────────────────────────────────────
+  'list-visits': {
+    type: 'object',
+    properties: {
+      visits: paginatedSchema(visitObject),
+    },
+  },
+  'export-visits': {
+    type: 'object',
+    properties: {
+      visits:  { type: 'array', items: visitObject },
+      limited: { type: 'boolean' },
+      total:   { type: 'integer' },
+    },
+  },
+  // ── Portal ───────────────────────────────────────────────────────────────
+  'get-portal-stats': {
+    type: 'object',
+    properties: {
+      stats: {
+        type: 'object',
+        properties: {
+          total_paid:       { type: 'string' },
+          total_unpaid:     { type: 'string' },
+          total_referrals:  { type: 'integer' },
+          conversion_rate:  { type: 'string' },
+        },
+      },
+      recent_referrals:  { type: 'array', items: referralObject },
+      portal_notice_html: { type: 'string' },
+    },
+  },
+  'list-portal-referrals': {
+    type: 'object',
+    properties: {
+      referrals: paginatedSchema(referralObject),
+    },
+  },
+  'list-portal-transactions': {
+    type: 'object',
+    properties: {
+      transactions: {
+        type: 'object',
+        properties: {
+          data: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                human_date:  { type: 'string' },
+                amount:      { type: 'number' },
+                status:      { type: 'string' },
+                description: { type: 'string' },
+              },
+            },
+          },
+          total:        { type: 'integer' },
+          per_page:     { type: 'integer' },
+          current_page: { type: 'integer' },
+        },
+      },
+    },
+  },
+  'list-portal-visits': {
+    type: 'object',
+    properties: {
+      visits: paginatedSchema({
+        type: 'object',
+        properties: {
+          ...visitObject.properties,
+          human_date:            { type: 'string' },
+          total_referral_amount: { type: 'number' },
+          is_converted:          { type: 'boolean' },
+        },
+      }),
+    },
+  },
+  'get-portal-settings': {
+    type: 'object',
+    properties: {
+      settings: {
+        type: 'object',
+        properties: {
+          ref_email_notification: { type: 'string', enum: ['yes', 'no'] },
+          payment_email:          { type: 'string', nullable: true },
+          bank_details:           { type: 'string', nullable: true },
+        },
+      },
+      form_fields: { type: 'object' },
+    },
+  },
+  'update-portal-settings': messageOnlySchema,
+  // ── Reports ──────────────────────────────────────────────────────────────
+  'get-dashboard-stats': {
+    type: 'object',
+    properties: {
+      stats: {
+        type: 'object',
+        properties: {
+          affiliates:         { type: 'object', properties: { title: { type: 'string' }, count: { type: 'number' }, is_money: { type: 'boolean' } } },
+          pending:            { type: 'object', properties: { title: { type: 'string' }, count: { type: 'number' }, is_money: { type: 'boolean' } } },
+          paid:               { type: 'object', properties: { title: { type: 'string' }, count: { type: 'number' }, is_money: { type: 'boolean' } } },
+          unpaid:             { type: 'object', properties: { title: { type: 'string' }, count: { type: 'number' }, is_money: { type: 'boolean' } } },
+          visits:             { type: 'object', properties: { title: { type: 'string' }, count: { type: 'number' }, is_money: { type: 'boolean' } } },
+          paid_transactions:  { type: 'object', properties: { title: { type: 'string' }, count: { type: 'number' }, is_money: { type: 'boolean' } } },
+          pending_payout:     { type: 'object', properties: { title: { type: 'string' }, count: { type: 'number' }, is_money: { type: 'boolean' } } },
+        },
+      },
+      recent_referrals: { type: 'array', items: referralObject },
+      top_affiliates:   { type: 'array', items: affiliateObject },
+      recent_visits:    { type: 'array', items: visitObject },
+      recent_payouts:   { type: 'array', items: payoutObject },
+    },
+  },
+  'get-dashboard-chart-stats': {
+    type: 'object',
+    properties: {
+      data:   { type: 'array', items: { type: 'object' } },
+      labels: { type: 'array', items: { type: 'string' } },
+    },
+  },
+  'list-advanced-providers': {
+    type: 'object',
+    properties: {
+      providers: {
+        type: 'object',
+        properties: {
+          fla: { type: 'object', properties: { title: { type: 'string' } } },
+          edd: { type: 'object', properties: { title: { type: 'string' } } },
+          woo: { type: 'object', properties: { title: { type: 'string' } } },
+        },
+      },
+    },
+  },
+  'get-commerce-report': {
+    type: 'object',
+    properties: {
+      report: {
+        type: 'object',
+        properties: {
+          enabled: { type: 'boolean' },
+          title:   { type: 'string' },
+          widgets: { type: 'array', items: { type: 'object', properties: { label: { type: 'string' }, value: {}, is_money: { type: 'boolean' } } } },
+        },
+      },
+    },
+  },
+  // ── Settings ─────────────────────────────────────────────────────────────
+  'get-email-config': {
+    type: 'object',
+    properties: {
+      settings: { type: 'object' },
+    },
+  },
+  'update-email-config': {
+    type: 'object',
+    properties: {
+      settings: { type: 'object' },
+      message:  { type: 'string' },
+    },
+    required: ['settings', 'message'],
+  },
+  'list-email-templates': {
+    type: 'object',
+    properties: {
+      emails: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            email_key:    { type: 'string' },
+            default_body: { type: 'string' },
+            settings:     { type: 'object' },
+          },
+        },
+      },
+      smartcodes: { type: 'array', items: { type: 'object' } },
+    },
+  },
+  'update-email-template': {
+    type: 'object',
+    properties: {
+      message:      { type: 'string' },
+      settings:     { type: 'object' },
+      all_settings: { type: 'object' },
+    },
+    required: ['message'],
+  },
+  'get-referral-config': {
+    type: 'object',
+    properties: {
+      config: { type: 'object' },
+    },
+  },
+  'update-referral-config': {
+    type: 'object',
+    properties: {
+      config:  { type: 'object' },
+      message: { type: 'string' },
+    },
+    required: ['config', 'message'],
+  },
+  'list-pages': {
+    type: 'object',
+    properties: {
+      pages: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            id:    { type: 'integer' },
+            link:  { type: 'string' },
+            title: { type: 'string' },
+          },
+        },
+      },
+    },
+  },
+  'create-page': {
+    type: 'object',
+    properties: {
+      page: {
+        type: 'object',
+        properties: {
+          id:    { type: 'integer' },
+          link:  { type: 'string' },
+          title: { type: 'string' },
+        },
+      },
+      message: { type: 'string' },
+    },
+    required: ['page', 'message'],
+  },
+  'get-affiliate-options': {
+    type: 'object',
+    properties: {
+      affiliates: { type: 'array', items: affiliateObject },
+    },
+  },
+  'get-user-options': {
+    type: 'object',
+    properties: {
+      users: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            ID:           { type: 'integer' },
+            display_name: { type: 'string' },
+          },
+        },
+      },
+    },
+  },
+  'get-registration-fields': {
+    type: 'object',
+    properties: {
+      fields:   { type: 'array', items: { type: 'object' } },
+      settings: { type: 'object' },
+    },
+  },
+  'list-features': {
+    type: 'object',
+    properties: {
+      features: { type: 'object' },
+      addons:   { type: 'array', items: { type: 'object' } },
+    },
+  },
+  'install-addon': {
+    type: 'object',
+    properties: {
+      results: { type: 'object' },
+      message: { type: 'string' },
+    },
+  },
+  'get-feature-settings': {
+    type: 'object',
+    properties: {
+      is_enabled:  { type: 'string', enum: ['yes', 'no'] },
+      feature_key: { type: 'string' },
+    },
+  },
+  'update-feature-settings': messageOnlySchema,
+  'update-registration-fields': {
+    type: 'object',
+    properties: {
+      message:  { type: 'string' },
+      fields:   { type: 'array', items: { type: 'object' } },
+      settings: { type: 'object' },
+    },
+    required: ['message'],
+  },
+  'list-managers': {
+    type: 'object',
+    properties: {
+      managers: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            id:          { type: 'integer' },
+            name:        { type: 'string' },
+            email:       { type: 'string' },
+            avatar:      { type: 'string' },
+            permissions: { type: 'object' },
+            is_admin:    { type: 'boolean' },
+          },
+        },
+      },
+      permissions: { type: 'array', items: { type: 'object' } },
+    },
+  },
+  'update-managers': messageOnlySchema,
+  'delete-manager':  messageOnlySchema,
+  // ── Groups (Pro) ─────────────────────────────────────────────────────────
+  'list-groups': {
+    type: 'object',
+    properties: {
+      groups: paginatedSchema(groupObject),
+    },
+  },
+  'create-group': {
+    type: 'object',
+    properties: {
+      message: { type: 'string' },
+      data:    groupObject,
+    },
+    required: ['message', 'data'],
+  },
+  'get-group': {
+    type: 'object',
+    properties: {
+      group: groupObject,
+    },
+  },
+  'update-group': {
+    type: 'object',
+    properties: {
+      data:    groupObject,
+      message: { type: 'string' },
+    },
+    required: ['data', 'message'],
+  },
+  'delete-group': {
+    type: 'object',
+    properties: {
+      message: { type: 'string' },
+      data:    groupObject,
+    },
+    required: ['message'],
+  },
+  'list-group-affiliates': {
+    type: 'object',
+    properties: {
+      affiliates: paginatedSchema(affiliateObject),
+    },
+  },
+  'get-group-overview': {
+    type: 'object',
+    properties: {
+      widgets: {
+        type: 'object',
+        properties: {
+          unpaid_amount:   { type: 'number' },
+          paid_amount:     { type: 'number' },
+          total_affiliate: { type: 'integer' },
+          total_earnings:  { type: 'number' },
+        },
+      },
+    },
+  },
+  'get-group-statistics': {
+    type: 'object',
+    properties: {
+      data:   { type: 'array', items: { type: 'object' } },
+      labels: { type: 'array', items: { type: 'string' } },
+    },
+  },
+  // ── Creatives (Pro) ──────────────────────────────────────────────────────
+  'list-creatives': {
+    type: 'object',
+    properties: {
+      creatives: paginatedSchema(creativeObject),
+    },
+  },
+  'create-creative': {
+    type: 'object',
+    properties: {
+      creative: creativeObject,
+      message:  { type: 'string' },
+    },
+    required: ['creative', 'message'],
+  },
+  'get-creative': {
+    type: 'object',
+    properties: {
+      creative: creativeObject,
+    },
+  },
+  'update-creative': {
+    type: 'object',
+    properties: {
+      creative: creativeObject,
+      message:  { type: 'string' },
+    },
+    required: ['creative', 'message'],
+  },
+  'delete-creative': messageOnlySchema,
+  'list-portal-creatives': {
+    type: 'object',
+    properties: {
+      creatives: paginatedSchema(creativeObject),
+    },
+  },
+  // ── Connected Sites (Pro) ────────────────────────────────────────────────
+  'get-connected-sites-config': {
+    type: 'object',
+    properties: {
+      config: { type: 'object' },
+    },
+  },
+  'update-connected-sites-status': messageOnlySchema,
+  'update-connected-site': messageOnlySchema,
+  'issue-site-token': {
+    type: 'object',
+    properties: {
+      message:        { type: 'string' },
+      new_site: {
+        type: 'object',
+        properties: {
+          status:       { type: 'string' },
+          site_url:     { type: 'string' },
+          site_title:   { type: 'string' },
+          server_token: { type: 'string' },
+          logo:         { type: 'string' },
+          description:  { type: 'string' },
+          subtitle:     { type: 'string' },
+          site_id:      { type: 'integer' },
+        },
+      },
+      connect_config: { type: 'string', description: 'JSON-encoded connection config string.' },
+    },
+    required: ['message', 'new_site'],
+  },
+  'disconnect-site': messageOnlySchema,
+  // ── License (Pro) ────────────────────────────────────────────────────────
+  'get-license': {
+    type: 'object',
+    properties: {
+      license_status:  { type: 'string' },
+      license_expires: { type: 'string', nullable: true },
+    },
+  },
+  'save-license': {
+    type: 'object',
+    properties: {
+      license_data: { type: 'object' },
+      message:      { type: 'string' },
+    },
+    required: ['license_data', 'message'],
+  },
+  'delete-license': {
+    type: 'object',
+    properties: {
+      license_data: { type: 'object' },
+      message:      { type: 'string' },
+    },
+    required: ['license_data', 'message'],
+  },
+  // ── Settings — integrations ──────────────────────────────────────────────
+  'list-integrations': {
+    type: 'object',
+    properties: {
+      integrations: { type: 'array', items: { type: 'object', properties: { key: { type: 'string' }, title: { type: 'string' }, is_active: { type: 'boolean' } } } },
+    },
+  },
+  'get-integration-config': {
+    type: 'object',
+    properties: {
+      config: { type: 'object' },
+    },
+  },
+  'save-integration-config': messageOnlySchema,
+  'update-integration-status': messageOnlySchema,
+  'get-integration-product-options': {
+    type: 'object',
+    properties: {
+      options: { type: 'array', items: { type: 'object', properties: { id: { type: 'integer' }, name: { type: 'string' } } } },
+    },
+  },
+  'get-affiliate-group-options': {
+    type: 'object',
+    properties: {
+      affiliate_groups: {
+        type: 'array',
+        items: { type: 'object', properties: { id: { type: 'integer' }, name: { type: 'string' } } },
+      },
+    },
+  },
+  'update-email-templates': messageOnlySchema,
+  'get-migration-status':     { type: 'object', properties: { status: { type: 'object' } } },
+  'get-migration-statistics': { type: 'object', properties: { statistics: { type: 'object' } } },
+  'list-migrations':          { type: 'object', properties: { migrations: { type: 'array', items: { type: 'object' } } } },
+  'start-migration':          messageOnlySchema,
+  'wipe-data':                messageOnlySchema,
+}
+
+// ---------------------------------------------------------------------------
+
+function buildOpenApiSpec(route) {
+  const fullPath = getFullPath(route)
+  const meta = REST_MODULE_META[route.module]
+  const pathParams = extractPathParams(fullPath)
+  const queryParams = getDefaultQueryParams(route.slug)
+  const parameters = [...pathParams, ...queryParams]
+
+  const isWriteMethod = ['POST', 'PUT', 'PATCH'].includes(route.method)
+  const requestBody = isWriteMethod
+    ? {
+        required: false,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              description: 'Request body parameters.',
+            },
+          },
+        },
+      }
+    : undefined
+
+  const spec = {
+    openapi: '3.0.4',
+    info: {
+      title: 'FluentAffiliate API',
+      description: 'REST API documentation for FluentAffiliate — a WordPress affiliate program management plugin.',
+      version: '1.0.0',
+    },
+    servers: [
+      {
+        url: 'https://{website}/wp-json/fluent-affiliate/v2',
+        description: 'Your WordPress website',
+        variables: {
+          website: {
+            default: 'YourWebsite.com',
+            description: 'Your WordPress website domain (without https://)',
+          },
+        },
+      },
+    ],
+    security: [{ ApplicationPasswords: [] }],
+    paths: {
+      [normalizeRoutePathParams(fullPath)]: {
+        [route.method.toLowerCase()]: {
+          operationId: route.operationId,
+          summary: `${route.method} ${route.title}`,
+          description: `${route.description}\n\nController: \`${route.controller}@${route.action}\`\nRoute source: \`${route.isPro ? 'fluent-affiliate-pro/' : ''}app/Http/Routes/api.php\``,
+          tags: [(meta?.title ?? route.module).replace(/ API$/, '')],
+          security: [{ ApplicationPasswords: [] }],
+          parameters,
+          ...(requestBody ? { requestBody } : {}),
+          responses: {
+            '200': {
+              description: 'Successful response',
+              content: {
+                'application/json': {
+                  schema: RESPONSE_SCHEMAS[route.slug] ?? { type: 'object' },
+                },
+              },
+            },
+            '400': {
+              description: 'Bad request.',
+              content: {
+                'application/json': {
+                  schema: { type: 'object', properties: { message: { type: 'string' } } },
+                  example: { message: 'Bad request.' },
+                },
+              },
+            },
+            '401': {
+              description: 'Unauthorized.',
+              content: {
+                'application/json': {
+                  schema: { type: 'object', properties: { message: { type: 'string' } } },
+                  example: { message: 'Sorry, you are not allowed to do this.' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    components: {
+      securitySchemes: {
+        ApplicationPasswords: {
+          type: 'apiKey',
+          in: 'header',
+          name: 'Authorization',
+          description: 'WordPress Application Passwords — use Basic auth with username:application_password.',
+        },
+      },
+    },
+  }
+
+  return JSON.stringify(spec, null, 2) + '\n'
+}
+
+function buildRestApiIndexDoc(allRoutes) {
+  const moduleGroups = {}
+  for (const route of allRoutes) {
+    if (!moduleGroups[route.module]) moduleGroups[route.module] = []
+    moduleGroups[route.module].push(route)
+  }
 
   const lines = [
     '---',
     'title: REST API Overview',
-    'description: Overview of the FluentAffiliate REST API.',
+    'description: Source-verified overview for the FluentAffiliate REST API.',
     '---',
     '',
-    '# REST API',
+    '# FluentAffiliate REST API',
     '',
-    'All endpoints live under:',
+    `This reference covers ${allRoutes.length} routes registered in the FluentAffiliate core and Pro route files.`,
     '',
-    '```',
-    'https://yoursite.com/wp-json/fluent-affiliate/v2/',
-    '```',
+    '## Base URL',
+    '',
+    '`https://your-site.com/wp-json/fluent-affiliate/v2`',
     '',
     '## Authentication',
     '',
-    'Use a **WordPress nonce** (issued via `wp_create_nonce(\'wp_rest\')`) in the `X-WP-Nonce` header. For server-to-server requests, [Application Passwords](https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/#application-passwords) are also supported.',
+    '- **Admin and settings routes:** use WordPress Application Passwords (`username:application_password` via Basic auth) or a WordPress nonce in the `X-WP-Nonce` header.',
+    '- **Portal routes:** browser clients use cookie authentication with an `X-WP-Nonce` header; server-to-server integrations can use Application Passwords.',
+    '- **Method override:** the FluentAffiliate frontend sends PUT, PATCH, and DELETE requests as POST requests with an `X-HTTP-Method-Override` header.',
     '',
-    '```bash',
-    'curl https://yoursite.com/wp-json/fluent-affiliate/v2/affiliates \\',
-    '  -H "X-WP-Nonce: abc123"',
-    '```',
+    '## URL Structure',
     '',
-    '## Core Resources',
+    'All routes share the single base path `/wp-json/fluent-affiliate/v2`. There is no separate Pro URL prefix — Pro modules (Groups, Creatives, Connected Sites, License) register their routes under the `/settings/` segment alongside core settings routes.',
     '',
-    '| Resource | Base Path | Auth |',
-    '|----------|-----------|------|',
+    '| Pro module | URL prefix |',
+    '| --- | --- |',
+    '| Groups | `/settings/groups/…` |',
+    '| Creatives | `/settings/creatives/…` |',
+    '| Connected Sites | `/settings/connected-sites-config/…` |',
+    '| License | `/settings/license` |',
+    '',
+    '## Modules',
+    '',
+    '| Module | Edition | Route Count | Description |',
+    '| --- | --- | --- | --- |',
   ]
 
-  for (const r of coreResources) {
-    const title = r.slug.charAt(0).toUpperCase() + r.slug.slice(1)
-    lines.push(`| [${title}](/restapi/${r.slug}) | \`/${r.prefix}\` | ${policyAuth(r.policy)} |`)
-  }
-
-  lines.push('', '## Pro Resources', '', '| Resource | Description | Auth |', '|----------|-------------|------|')
-
-  for (const r of proResources) {
-    lines.push(`| [${r.title} <span class="pro-badge">PRO</span>](/restapi/${r.slug}) | Requires FluentAffiliate Pro. | ${policyAuth(r.policy)} |`)
+  for (const [module, meta] of Object.entries(REST_MODULE_META)) {
+    const count = moduleGroups[module]?.length ?? 0
+    const isPro = meta.isPro || (moduleGroups[module] ?? []).every(r => r.isPro)
+    lines.push(
+      `| [${meta.title}](/restapi/${module}) | ${renderSourceLabel(isPro)} | ${count} | ${meta.description} |`,
+    )
   }
 
   lines.push('')
-
   return lines.join('\n') + '\n'
 }
+
 
 // ---------------------------------------------------------------------------
 // Main
@@ -2206,28 +3662,63 @@ async function main() {
   const sourceDirs = [join(coreRoot, 'app')]
   if (hasPro) sourceDirs.push(join(proRoot, 'app'))
 
-  const { actions, filters } = extractHooks(sourceDirs)
+  const { actions: rawActions, filters: rawFilters } = extractHooks(sourceDirs)
+
+  // Normalise dynamic hook names where the scanner captures the wrong variable
+  // e.g. 'fluent_affiliate/affiliate_status_to_{affiliate}' → '{status}' (scanner
+  // sees $affiliate->status and captures 'affiliate', but the meaningful placeholder is 'status')
+  const HOOK_NAME_ALIASES = {
+    'fluent_affiliate/affiliate_status_to_{affiliate}': 'fluent_affiliate/affiliate_status_to_{status}',
+    'fluent_affiliate/provider_reference_{this}':       'fluent_affiliate/provider_reference_{provider}_url',
+    'fluent_affiliate/provider_reference_{referral}':   'fluent_affiliate/provider_reference_{provider}_url',
+  }
+  const normaliseHookMap = (map) => {
+    const out = {}
+    for (const [k, v] of Object.entries(map)) {
+      const canonical = HOOK_NAME_ALIASES[k] ?? k
+      if (out[canonical]) {
+        // merge file lists
+        out[canonical].files = [...new Set([...out[canonical].files, ...v.files])]
+      } else {
+        out[canonical] = v
+      }
+    }
+    return out
+  }
+  const actions = normaliseHookMap(rawActions)
+  const filters = normaliseHookMap(rawFilters)
 
   console.log('  action hooks:', Object.keys(actions).length)
   console.log('  filter hooks:', Object.keys(filters).length)
 
   // ── Routes ────────────────────────────────────────────────────────────────
-  const apiFile   = join(coreRoot, 'app', 'Http', 'Routes', 'api.php')
-  const routes    = parseRoutes(apiFile)
+  const apiFile = join(coreRoot, 'app', 'Http', 'Routes', 'api.php')
+  const coreRoutes = parseRoutes(apiFile)
 
-  let proRoutes = []
+  let proRoutesRaw = []
   if (hasPro) {
     const proApiFile = join(proRoot, 'app', 'Http', 'Routes', 'api.php')
-    proRoutes = parseRoutes(proApiFile)
+    proRoutesRaw = parseRoutes(proApiFile)
   }
-  const allRoutes = [...routes, ...proRoutes]
+
+  // Classify and enrich all routes
+  const enrichRoutes = (rawRoutes, isPro) =>
+    rawRoutes.map((r) => {
+      const module = classifyRoute(r)
+      const { slug, title, operationId, description } = buildOperationMeta({ ...r, module })
+      return { ...r, module, slug, title, operationId, description, isPro }
+    })
+
+  const allRoutes = [
+    ...enrichRoutes(coreRoutes, false),
+    ...enrichRoutes(proRoutesRaw, true),
+  ]
 
   console.log('  routes found:', allRoutes.length)
 
   // ── Clean output dirs ─────────────────────────────────────────────────────
   console.log('\nCleaning generated directories…')
   cleanDir(join(DOCS_DIR, 'database', 'models'))
-  // Keep schema.md parent (database/)
   ensureDir(join(DOCS_DIR, 'database'))
 
   cleanDir(join(DOCS_DIR, 'hooks', 'actions'))
@@ -2235,6 +3726,14 @@ async function main() {
   ensureDir(join(DOCS_DIR, 'hooks'))
 
   cleanDir(join(DOCS_DIR, 'restapi'))
+  ensureDir(join(DOCS_DIR, 'restapi', 'operations'))
+
+  // Clean and recreate openapi dir
+  if (existsSync(openapiRoot)) rmSync(openapiRoot, { recursive: true, force: true })
+  mkdirSync(openapiRoot, { recursive: true })
+
+  // Ensure .generated dir exists
+  ensureDir(generatedRoot)
 
   // ── Write database docs ───────────────────────────────────────────────────
   console.log('\nWriting database docs…')
@@ -2243,14 +3742,14 @@ async function main() {
   writeDoc(join(DOCS_DIR, 'database', 'models', 'index.md'), buildModelsIndexDoc(tables))
 
   const modelSlugMap = {
-    fa_affiliates:         'affiliate',
-    fa_referrals:          'referral',
-    fa_payouts:            'payout',
-    fa_payout_transactions:'transaction',
-    fa_visits:             'visit',
-    fa_customers:          'customer',
-    fa_meta:               'meta',
-    fa_creatives:          'creative',
+    fa_affiliates:          'affiliate',
+    fa_referrals:           'referral',
+    fa_payouts:             'payout',
+    fa_payout_transactions: 'transaction',
+    fa_visits:              'visit',
+    fa_customers:           'customer',
+    fa_meta:                'meta',
+    fa_creatives:           'creative',
   }
 
   for (const [tableName, columns] of Object.entries(tables)) {
@@ -2261,7 +3760,7 @@ async function main() {
     if (content) writeDoc(join(DOCS_DIR, 'database', 'models', `${slug}.md`), content)
   }
 
-  // AffiliateGroup static doc (not a standalone table — stored in fa_meta)
+  // AffiliateGroup static doc (stored in fa_meta, not a dedicated table)
   if (hasPro) {
     writeDoc(join(DOCS_DIR, 'database', 'models', 'affiliate-group.md'), [
       '---',
@@ -2335,7 +3834,7 @@ async function main() {
     ].join('\n') + '\n')
   }
 
-  // Add model stubs for WordPress models not in migrations
+  // WordPress User model stub
   writeDoc(join(DOCS_DIR, 'database', 'models', 'user.md'), [
     '---',
     'title: User Model',
@@ -2363,12 +3862,12 @@ async function main() {
   console.log('\nWriting hook docs…')
 
   writeDoc(join(DOCS_DIR, 'hooks', 'index.md'), buildHooksIndexDoc(actions, filters))
-  writeDoc(join(DOCS_DIR, 'hooks', 'actions', 'index.md'), buildHooksIndexDoc(actions, filters))
-  writeDoc(join(DOCS_DIR, 'hooks', 'filters', 'index.md'), buildHooksIndexDoc(actions, filters))
+  writeDoc(join(DOCS_DIR, 'hooks', 'actions', 'index.md'), buildActionHooksIndexDoc(actions))
+  writeDoc(join(DOCS_DIR, 'hooks', 'filters', 'index.md'), buildFilterHooksIndexDoc(filters))
 
   const ACTION_PAGE_CATEGORIES = {
-    integrations: h => /affiliate_created_via_fluent_form/.test(h),
-    affiliates:   h => /\/affiliate/.test(h) && !/affiliate_group/.test(h) || h === 'fluent_affiliate/admin_app_rendering' || h === 'fluent_affiliate/wipe_current_data',
+    integrations: h => /affiliate_created_via_fluent_form|wipe_current_data/.test(h),
+    affiliates:   h => /\/affiliate/.test(h) && !/affiliate_group/.test(h) || h === 'fluent_affiliate/admin_app_rendering',
     groups:       h => /affiliate_group/.test(h),
     referrals:    h => /\/referral/.test(h),
     payouts:      h => /\/payout/.test(h),
@@ -2382,13 +3881,12 @@ async function main() {
     referrals:    h => /\/referral|data_export_limit|provider_reference|\/commission|ignore_zero|formatted_order|recurring_commission/.test(h),
     permissions:  h => /has_all_|user_has_affiliate_access/.test(h),
     portal:       h => /\/portal|default_share_url|will_load_tracker|smartcode/.test(h),
-    settings:     h => /get_email_config|update_email_config|get_referral_config|update_referral_config|get_feature|update_feature|settings_menu|top_menu|right_menu|admin_vars|dashboard_notices|admin_url|portal_page_url|registered_features|max_execution|is_rtl|suggested_colors|payout_form_schema|referral_formats|portal_menu_items|get_currencies|currency_symbols|referral_config_field_types|default_referral_settings|social_media/.test(h),
+    settings:     h => /get_email_config|update_email_config|get_referral_config|update_referral_config|get_feature|update_feature|settings_menu|top_menu|right_menu|admin_vars|dashboard_notices|admin_url|portal_page_url|registered_features|max_execution|is_rtl|suggested_colors|payout_form_schema|referral_formats|portal_menu_items|get_currencies|currency_symbols|referral_config_field_types|default_referral_settings|social_media|fluent_affiliate_base_url|fluent_affiliate_tracker_vars|fluent_affiliate_dashboard/.test(h),
     auth:         h => /\/auth\/|terms_policy|reserved_usernames/.test(h),
-    integrations: h => /get_integrations|get_integration_config|save_integration_config|user_ip|\/migrators|get_migration|get_current_data|wppayform|advanced_report|woo_menu/.test(h),
+    integrations: h => /get_integrations|get_integration_config|save_integration_config|user_ip|\/migrators|get_migration|get_current_data|wppayform|advanced_report|woo_menu|product_cat_options/.test(h),
     creatives:    h => /creative/.test(h),
   }
 
-  // Categorise action hooks
   const actionsByCategory = {}
   for (const [hook] of Object.entries(actions)) {
     for (const [cat, fn] of Object.entries(ACTION_PAGE_CATEGORIES)) {
@@ -2400,7 +3898,6 @@ async function main() {
     }
   }
 
-  // Categorise filter hooks
   const filtersByCategory = {}
   for (const [hook] of Object.entries(filters)) {
     for (const [cat, fn] of Object.entries(FILTER_PAGE_CATEGORIES)) {
@@ -2449,87 +3946,45 @@ async function main() {
   // ── Write REST API docs ───────────────────────────────────────────────────
   console.log('\nWriting REST API docs…')
 
-  // Separate core routes from pro routes that need their own pages
-  // Pro settings routes are split into: groups, creatives, connected-sites, license, settings-extra
-  const proRoutePageMap = {
-    groups:          r => r.controller === 'AffiliateGroupController',
-    creatives:       r => r.controller === 'CreativeController',
-    'connected-sites': r => r.controller === 'DomainController',
-    license:         r => r.controller === 'LicenseController',
+  // Group routes by module
+  const moduleGroups = {}
+  for (const route of allRoutes) {
+    if (!moduleGroups[route.module]) moduleGroups[route.module] = []
+    moduleGroups[route.module].push(route)
   }
 
-  // Build separate page route lists
-  const proPageRoutes = {}
-  const coreSettingsRoutes = []
-  const coreRoutesByPrefix = {}
-
-  for (const route of routes) {
-    if (!coreRoutesByPrefix[route.prefix]) coreRoutesByPrefix[route.prefix] = []
-    coreRoutesByPrefix[route.prefix].push(route)
+  // Write module-order JSON for sidebar
+  const moduleOrder = {}
+  for (const [module, moduleRoutes] of Object.entries(moduleGroups)) {
+    moduleOrder[module] = moduleRoutes.map((r) => r.slug)
   }
+  writeFileSync(join(generatedRoot, 'restapi-module-order.json'), JSON.stringify(moduleOrder, null, 2))
+  console.log('  wrote .generated/restapi-module-order.json')
 
-  for (const route of proRoutes) {
-    let assigned = false
-    for (const [page, fn] of Object.entries(proRoutePageMap)) {
-      if (fn(route)) {
-        if (!proPageRoutes[page]) proPageRoutes[page] = []
-        proPageRoutes[page].push(route)
-        assigned = true
-        break
-      }
-    }
-    if (!assigned) {
-      // Remaining pro settings routes (registration-fields, options, managers)
-      if (!coreRoutesByPrefix['settings']) coreRoutesByPrefix['settings'] = []
-      coreRoutesByPrefix['settings'].push(route)
-    }
-  }
-
+  // Write index
   writeDoc(join(DOCS_DIR, 'restapi', 'index.md'), buildRestApiIndexDoc(allRoutes))
 
-  const REST_PAGE_SLUGS = {
-    affiliates: 'affiliates',
-    referrals:  'referrals',
-    payouts:    'payouts',
-    visits:     'visits',
-    portal:     'portal',
-    reports:    'reports',
-    settings:   'settings',
-  }
+  // Write module pages + individual operation pages + OpenAPI specs
+  for (const [module, meta] of Object.entries(REST_MODULE_META)) {
+    const moduleRoutes = moduleGroups[module] ?? []
 
-  for (const [prefix, prefixRoutes] of Object.entries(coreRoutesByPrefix)) {
-    const slug    = REST_PAGE_SLUGS[prefix] ?? prefix
-    const content = buildRestApiDoc(prefix, prefixRoutes)
-    if (content) writeDoc(join(DOCS_DIR, 'restapi', `${slug}.md`), content)
-  }
+    // Module-level page
+    const modulePage = buildRestApiModuleDoc(module, moduleRoutes)
+    if (modulePage) writeDoc(join(DOCS_DIR, 'restapi', `${module}.md`), modulePage)
 
-  // Write Pro-specific pages
-  const proStubTitle = { groups: 'Affiliate Groups', creatives: 'Creatives', 'connected-sites': 'Connected Sites', license: 'License' }
+    // Individual operation pages and OpenAPI specs
+    for (const route of moduleRoutes) {
+      const operationDocPath = join(DOCS_DIR, 'restapi', 'operations', module, `${route.slug}.md`)
+      writeDoc(operationDocPath, buildOperationDoc(route))
 
-  const proStub = (title) => [
-    '---',
-    `title: ${title}`,
-    `description: ${title} REST API endpoints — requires FluentAffiliate Pro.`,
-    '---',
-    '',
-    `# ${title} <span class="pro-badge">PRO</span>`,
-    '',
-    'These endpoints are provided by **FluentAffiliate Pro** and require the Pro plugin to be installed and activated.',
-    '',
-    'Install FluentAffiliate Pro to view the full API documentation for this section.',
-    '',
-  ].join('\n') + '\n'
-
-  for (const [page, title] of Object.entries(proStubTitle)) {
-    if (proPageRoutes[page] && proPageRoutes[page].length > 0) {
-      const content = buildRestApiDoc(page, proPageRoutes[page], title)
-      if (content) writeDoc(join(DOCS_DIR, 'restapi', `${page}.md`), content)
-    } else {
-      writeDoc(join(DOCS_DIR, 'restapi', `${page}.md`), proStub(title))
+      const specPath = join(openapiRoot, module, `${route.slug}.json`)
+      writeDoc(specPath, buildOpenApiSpec(route))
     }
   }
 
-  console.log('\nDone.')
+  const totalRoutes = allRoutes.length
+  const totalSpecs = allRoutes.length
+  console.log(`\nDone. Generated docs for ${totalRoutes} routes, ${totalSpecs} OpenAPI specs.`)
 }
 
 main().catch(err => { console.error(err); process.exit(1) })

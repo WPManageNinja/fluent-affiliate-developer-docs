@@ -171,6 +171,7 @@ This prefix is consistent across all hooks fired by both the free plugin and the
 | `FLUENT_AFFILIATE_DIR` | Absolute server path to the plugin directory (with trailing slash) |
 | `FLUENT_AFFILIATE_URL` | URL to the plugin directory (with trailing slash) |
 | `FLUENT_AFFILIATE_VERSION` | Current plugin version string |
+| `FLUENT_AFFILIATE_PLUGIN_BASENAME` | Plugin basename string (e.g. `fluent-affiliate/fluent-affiliate.php`) — used for activation hooks and plugin row links |
 | `FLUENT_AFFILIATE_PRO` | Defined (with plugin version) when the Pro add-on is active |
 
 ## Pro Plugin

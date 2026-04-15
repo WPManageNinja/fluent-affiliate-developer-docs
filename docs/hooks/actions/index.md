@@ -1,31 +1,19 @@
 ---
-title: Hooks Overview
-description: Overview of all FluentAffiliate WordPress action and filter hooks.
+title: Action Hooks
+description: All FluentAffiliate WordPress action hooks, organized by category.
 ---
 
-# Hooks Overview
+# Action Hooks
 
-FluentAffiliate registers **31 action hooks** and **79 filter hooks** (including dynamic variants).
-
-## Action Hooks
+FluentAffiliate fires **31 action hooks** (including dynamic variants). Use `add_action()` to hook into these events.
 
 | Category | Description |
 |----------|-------------|
-| [Affiliates](/hooks/actions/affiliates) | Affiliate lifecycle events |
-| [Referrals](/hooks/actions/referrals) | Referral creation and status changes |
-| [Payouts](/hooks/actions/payouts) | Payout and transaction events |
+| [Affiliates](/hooks/actions/affiliates) | Affiliate lifecycle events — created, updated, status changes, deleted |
+| [Referrals](/hooks/actions/referrals) | Referral creation, status transitions, and deletion |
+| [Payouts](/hooks/actions/payouts) | Payout batch and transaction events |
 | [Portal](/hooks/actions/portal) | Customer portal render hooks |
-| [Integrations](/hooks/actions/integrations) | Third-party integration events |
-
-## Filter Hooks
-
-| Category | Description |
-|----------|-------------|
-| [Affiliates](/hooks/filters/affiliates) | Affiliate data and behaviour filters |
-| [Referrals](/hooks/filters/referrals) | Commission and referral data filters |
-| [Permissions](/hooks/filters/permissions) | Access control filters |
-| [Portal](/hooks/filters/portal) | Affiliate portal UI filters |
-| [Settings](/hooks/filters/settings) | Plugin configuration filters |
-| [Auth](/hooks/filters/auth) | Registration and login filters |
-| [Integrations](/hooks/filters/integrations) | Integration config and data filters |
+| [Integrations](/hooks/actions/integrations) | Third-party integration events and data migration hooks |
+| [Groups](/hooks/actions/groups) | Affiliate group lifecycle events <span class="pro-badge">PRO</span> |
+| [Creatives](/hooks/actions/creatives) | Creative asset lifecycle events <span class="pro-badge">PRO</span> |
 

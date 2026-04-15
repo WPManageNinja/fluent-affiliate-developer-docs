@@ -1,42 +1,20 @@
 ---
 title: Visits API
-description: REST API endpoints for Visits.
+description: Affiliate visit tracking records — listing and CSV export.
 ---
 
-# Visits
+# Visits API
 
-**Base URL:** `https://yoursite.com/wp-json/fluent-affiliate/v2`
+Affiliate visit tracking records — listing and CSV export.
+
+## Authentication
+
+Visit routes are protected by `VisitPolicy`. Admin users have full access; affiliate-level users require `read_all_visits`.
 
 ## Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/visits` | List affiliate visits. |
-| `GET` | `/visits/export` | Export visits as CSV. |
-
-## `GET /visits`
-
-List affiliate visits.
-
-**Auth:** Admin or affiliate with `fa_view_visits` capability  
-**Controller:** `VisitController::index`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/visits \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /visits/export`
-
-Export visits as CSV.
-
-**Auth:** Admin or affiliate with `fa_view_visits` capability  
-**Controller:** `VisitController::export`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/visits/export \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
+| Method | Path | Edition | Operation | Controller |
+| --- | --- | --- | --- | --- |
+| `GET` | `/visits` | Core | [List Visits](/restapi/operations/visits/list-visits) | `VisitController@index` |
+| `GET` | `/visits/export` | Core | [Export Visits](/restapi/operations/visits/export-visits) | `VisitController@export` |
 

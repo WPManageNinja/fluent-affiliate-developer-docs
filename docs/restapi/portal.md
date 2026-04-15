@@ -1,98 +1,24 @@
 ---
 title: Portal API
-description: REST API endpoints for Portal.
+description: Affiliate portal data — stats, referrals, transactions, visits, and settings for the currently authenticated affiliate.
 ---
 
-# Portal
+# Portal API
 
-**Base URL:** `https://yoursite.com/wp-json/fluent-affiliate/v2`
+Affiliate portal data — stats, referrals, transactions, visits, and settings for the currently authenticated affiliate.
+
+## Authentication
+
+Portal routes use `UserPolicy` and always return data scoped to the currently authenticated affiliate.
 
 ## Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/portalstats` | PortalController::getStats |
-| `GET` | `/portalreferrals` | PortalController::getReferrals |
-| `GET` | `/portaltransactions` | PortalController::getTransactions |
-| `GET` | `/portalvisits` | PortalController::getVisits |
-| `GET` | `/portalsettings` | PortalController::getSettings |
-| `POST` | `/portalsettings` | PortalController::updateSettings |
-
-## `GET /portalstats`
-
-PortalController::getStats
-
-**Auth:** Any authenticated WordPress user  
-**Controller:** `PortalController::getStats`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/portalstats \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /portalreferrals`
-
-PortalController::getReferrals
-
-**Auth:** Any authenticated WordPress user  
-**Controller:** `PortalController::getReferrals`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/portalreferrals \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /portaltransactions`
-
-PortalController::getTransactions
-
-**Auth:** Any authenticated WordPress user  
-**Controller:** `PortalController::getTransactions`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/portaltransactions \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /portalvisits`
-
-PortalController::getVisits
-
-**Auth:** Any authenticated WordPress user  
-**Controller:** `PortalController::getVisits`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/portalvisits \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /portalsettings`
-
-PortalController::getSettings
-
-**Auth:** Any authenticated WordPress user  
-**Controller:** `PortalController::getSettings`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/portalsettings \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `POST /portalsettings`
-
-PortalController::updateSettings
-
-**Auth:** Any authenticated WordPress user  
-**Controller:** `PortalController::updateSettings`
-
-```bash
-curl -X POST \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/portalsettings \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
+| Method | Path | Edition | Operation | Controller |
+| --- | --- | --- | --- | --- |
+| `GET` | `/portal/stats` | Core | [Get Portal Stats](/restapi/operations/portal/get-portal-stats) | `PortalController@getStats` |
+| `GET` | `/portal/referrals` | Core | [List Portal Referrals](/restapi/operations/portal/list-portal-referrals) | `PortalController@getReferrals` |
+| `GET` | `/portal/transactions` | Core | [List Portal Transactions](/restapi/operations/portal/list-portal-transactions) | `PortalController@getTransactions` |
+| `GET` | `/portal/visits` | Core | [List Portal Visits](/restapi/operations/portal/list-portal-visits) | `PortalController@getVisits` |
+| `GET` | `/portal/settings` | Core | [Get Portal Settings](/restapi/operations/portal/get-portal-settings) | `PortalController@getSettings` |
+| `POST` | `/portal/settings` | Core | [Update Portal Settings](/restapi/operations/portal/update-portal-settings) | `PortalController@updateSettings` |
 

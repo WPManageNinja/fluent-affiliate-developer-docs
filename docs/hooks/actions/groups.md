@@ -65,14 +65,14 @@ Fired after an affiliate group has been permanently deleted.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `$groupId` | `int` | ID of the deleted affiliate group. |
+| `$affiliateGroup` | `AffiliateGroup` | The AffiliateGroup model that was deleted (read-only at this point). |
 
 **Source:** `../fluent-affiliate-pro/app/Http/Controllers/AffiliateGroupController.php`
 
 ```php
-add_action('fluent_affiliate/after_delete_affiliate_group', function($groupId) {
+add_action('fluent_affiliate/after_delete_affiliate_group', function($affiliateGroup) {
     // Remove external records for this group
-    delete_option('my_plugin_group_' . $groupId . '_config');
+    delete_option('my_plugin_group_' . $affiliateGroup->id . '_config');
 });
 ```
 

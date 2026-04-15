@@ -1,168 +1,29 @@
 ---
 title: Payouts API
-description: REST API endpoints for Payouts.
+description: Payout batch management, transaction operations, payout processing, and CSV export.
 ---
 
-# Payouts
+# Payouts API
 
-**Base URL:** `https://yoursite.com/wp-json/fluent-affiliate/v2`
+Payout batch management, transaction operations, payout processing, and CSV export.
+
+## Authentication
+
+Payout routes are protected by `PayoutPolicy`. Admin users have full access; affiliate-level users require `read_all_payouts`.
 
 ## Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/payouts` | List payouts. |
-| `POST` | `/payouts/validate-payout-config` | Validate a payout configuration before processing. |
-| `POST` | `/payouts/process-payout` | Process a payout batch. |
-| `GET` | `/payouts/{id}` | Retrieve a single payout. |
-| `GET` | `/payouts/{id}/referrals` | List referrals included in a payout. |
-| `GET` | `/payouts/{id}/transactions` | List transactions in a payout. |
-| `GET` | `/payouts/{id}/transactions-export` | Export payout transactions as CSV. |
-| `DELETE` | `/payouts/{id}/transactions/{transaction_id}` | Delete a payout transaction. |
-| `PATCH` | `/payouts/{id}/transactions/{transaction_id}` | Update a payout transaction. |
-| `PATCH` | `/payouts/{id}/transactions/bulk-action` | Bulk update payout transactions. |
-| `PATCH` | `/payouts/{id}` | Update a payout. |
-
-## `GET /payouts`
-
-List payouts.
-
-**Auth:** Admin or affiliate with `fa_view_payouts` capability  
-**Controller:** `PayoutController::index`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/payouts \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `POST /payouts/validate-payout-config`
-
-Validate a payout configuration before processing.
-
-**Auth:** Admin or affiliate with `fa_view_payouts` capability  
-**Controller:** `PayoutController::validatePayoutConfig`
-
-```bash
-curl -X POST \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/payouts/validate-payout-config \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `POST /payouts/process-payout`
-
-Process a payout batch.
-
-**Auth:** Admin or affiliate with `fa_view_payouts` capability  
-**Controller:** `PayoutController::processPayout`
-
-```bash
-curl -X POST \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/payouts/process-payout \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /payouts/{id}`
-
-Retrieve a single payout.
-
-**Auth:** Admin or affiliate with `fa_view_payouts` capability  
-**Controller:** `PayoutController::show`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/payouts/1 \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /payouts/{id}/referrals`
-
-List referrals included in a payout.
-
-**Auth:** Admin or affiliate with `fa_view_payouts` capability  
-**Controller:** `PayoutController::getReferrals`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/payouts/1/referrals \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /payouts/{id}/transactions`
-
-List transactions in a payout.
-
-**Auth:** Admin or affiliate with `fa_view_payouts` capability  
-**Controller:** `PayoutController::getTransactions`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/payouts/1/transactions \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /payouts/{id}/transactions-export`
-
-Export payout transactions as CSV.
-
-**Auth:** Admin or affiliate with `fa_view_payouts` capability  
-**Controller:** `PayoutController::getExportableTransactions`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/payouts/1/transactions-export \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `DELETE /payouts/{id}/transactions/{transaction_id}`
-
-Delete a payout transaction.
-
-**Auth:** Admin or affiliate with `fa_view_payouts` capability  
-**Controller:** `PayoutController::deleteTransaction`
-
-```bash
-curl -X DELETE \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/payouts/1/transactions/VALUE \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `PATCH /payouts/{id}/transactions/{transaction_id}`
-
-Update a payout transaction.
-
-**Auth:** Admin or affiliate with `fa_view_payouts` capability  
-**Controller:** `PayoutController::patchTransaction`
-
-```bash
-curl -X PATCH \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/payouts/1/transactions/VALUE \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `PATCH /payouts/{id}/transactions/bulk-action`
-
-Bulk update payout transactions.
-
-**Auth:** Admin or affiliate with `fa_view_payouts` capability  
-**Controller:** `PayoutController::bulkPatchTransactions`
-
-```bash
-curl -X PATCH \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/payouts/1/transactions/bulk-action \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `PATCH /payouts/{id}`
-
-Update a payout.
-
-**Auth:** Admin or affiliate with `fa_view_payouts` capability  
-**Controller:** `PayoutController::updatePayout`
-
-```bash
-curl -X PATCH \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/payouts/1 \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
+| Method | Path | Edition | Operation | Controller |
+| --- | --- | --- | --- | --- |
+| `GET` | `/payouts` | Core | [List Payouts](/restapi/operations/payouts/list-payouts) | `PayoutController@index` |
+| `POST` | `/payouts/validate-payout-config` | Core | [Validate Payout Config](/restapi/operations/payouts/validate-payout-config) | `PayoutController@validatePayoutConfig` |
+| `POST` | `/payouts/process-payout` | Core | [Process Payout](/restapi/operations/payouts/process-payout) | `PayoutController@processPayout` |
+| `GET` | `/payouts/{id}` | Core | [Get Payout](/restapi/operations/payouts/get-payout) | `PayoutController@show` |
+| `GET` | `/payouts/{id}/referrals` | Core | [List Payout Referrals](/restapi/operations/payouts/list-payout-referrals) | `PayoutController@getReferrals` |
+| `GET` | `/payouts/{id}/transactions` | Core | [List Payout Transactions](/restapi/operations/payouts/list-payout-transactions) | `PayoutController@getTransactions` |
+| `GET` | `/payouts/{id}/transactions-export` | Core | [Export Payout Transactions](/restapi/operations/payouts/export-payout-transactions) | `PayoutController@getExportableTransactions` |
+| `DELETE` | `/payouts/{id}/transactions/{transaction_id}` | Core | [Delete Payout Transaction](/restapi/operations/payouts/delete-payout-transaction) | `PayoutController@deleteTransaction` |
+| `PATCH` | `/payouts/{id}/transactions/{transaction_id}` | Core | [Update Payout Transaction](/restapi/operations/payouts/update-payout-transaction) | `PayoutController@patchTransaction` |
+| `PATCH` | `/payouts/{id}/transactions/bulk-action` | Core | [Bulk Update Payout Transactions](/restapi/operations/payouts/bulk-update-payout-transactions) | `PayoutController@bulkPatchTransactions` |
+| `PATCH` | `/payouts/{id}` | Core | [Update Payout](/restapi/operations/payouts/update-payout) | `PayoutController@updatePayout` |
 

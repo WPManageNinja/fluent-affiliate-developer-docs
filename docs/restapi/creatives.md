@@ -1,98 +1,24 @@
 ---
 title: Creatives API
-description: REST API endpoints for Creatives.
+description: Creative asset management (admin) and portal creative retrieval for authenticated affiliates.
 ---
 
-# Creatives
+# Creatives API <span class="pro-badge">PRO</span>
 
-**Base URL:** `https://yoursite.com/wp-json/fluent-affiliate/v2`
+Creative asset management (admin) and portal creative retrieval for authenticated affiliates.
+
+## Authentication
+
+Admin creative routes are protected by `AdminPolicy`. The portal creatives endpoint uses `UserPolicy`.
 
 ## Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/creatives/creatives` | CreativeController::index |
-| `GET` | `/creatives/creatives/{id}` | CreativeController::show |
-| `POST` | `/creatives/creatives` | CreativeController::store |
-| `PATCH` | `/creatives/creatives/{id}` | CreativeController::update |
-| `DELETE` | `/creatives/creatives/{id}` | CreativeController::destroy |
-| `GET` | `/creativescreatives` | CreativeController::portalCreatives |
-
-## `GET /creatives/creatives`
-
-CreativeController::index
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `CreativeController::index`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/creatives/creatives \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /creatives/creatives/{id}`
-
-CreativeController::show
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `CreativeController::show`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/creatives/creatives/1 \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `POST /creatives/creatives`
-
-CreativeController::store
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `CreativeController::store`
-
-```bash
-curl -X POST \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/creatives/creatives \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `PATCH /creatives/creatives/{id}`
-
-CreativeController::update
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `CreativeController::update`
-
-```bash
-curl -X PATCH \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/creatives/creatives/1 \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `DELETE /creatives/creatives/{id}`
-
-CreativeController::destroy
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `CreativeController::destroy`
-
-```bash
-curl -X DELETE \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/creatives/creatives/1 \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /creativescreatives`
-
-CreativeController::portalCreatives
-
-**Auth:** Any authenticated WordPress user  
-**Controller:** `CreativeController::portalCreatives`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/creativescreatives \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
+| Method | Path | Edition | Operation | Controller |
+| --- | --- | --- | --- | --- |
+| `GET` | `/settings/creatives` | <span class="pro-badge">PRO</span> | [List Creatives](/restapi/operations/creatives/list-creatives) | `CreativeController@index` |
+| `GET` | `/settings/creatives/{id}` | <span class="pro-badge">PRO</span> | [Get Creative](/restapi/operations/creatives/get-creative) | `CreativeController@show` |
+| `POST` | `/settings/creatives` | <span class="pro-badge">PRO</span> | [Create Creative](/restapi/operations/creatives/create-creative) | `CreativeController@store` |
+| `PATCH` | `/settings/creatives/{id}` | <span class="pro-badge">PRO</span> | [Update Creative](/restapi/operations/creatives/update-creative) | `CreativeController@update` |
+| `DELETE` | `/settings/creatives/{id}` | <span class="pro-badge">PRO</span> | [Delete Creative](/restapi/operations/creatives/delete-creative) | `CreativeController@destroy` |
+| `GET` | `/portal/creatives` | <span class="pro-badge">PRO</span> | [List Portal Creatives](/restapi/operations/creatives/list-portal-creatives) | `CreativeController@portalCreatives` |
 

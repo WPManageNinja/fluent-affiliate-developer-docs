@@ -9,7 +9,21 @@ description: Action hooks in the Integrations category.
 
 | Hook | Description |
 |------|-------------|
+| [`fluent_affiliate/wipe_current_data`](#fluent-affiliate-wipe-current-data) | Fired when an admin triggers a full data-wipe via the migration tools. |
 | [`fluent_affiliate/affiliate_created_via_fluent_form`](#fluent-affiliate-affiliate-created-via-fluent-form) | Fired when a new affiliate is created through a Fluent Forms registration feed. |
+
+## `fluent_affiliate/wipe_current_data`
+
+Fired when an admin triggers a full data-wipe via the migration tools.
+
+**Source:** `app/Http/Controllers/MigrationController.php`
+
+```php
+add_action('fluent_affiliate/wipe_current_data', function() {
+    // Remove plugin data that is not in FA tables.
+    delete_option('my_plugin_affiliate_cache');
+});
+```
 
 ## `fluent_affiliate/affiliate_created_via_fluent_form`
 

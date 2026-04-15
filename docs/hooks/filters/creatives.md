@@ -46,14 +46,15 @@ Filters the creative data array before an existing creative is updated.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `$data` | `array` | Updated creative data. |
-| `$creative` | `Creative` | The existing Creative model being updated. |
+| `$data` | `array` | Updated creative data including `name`, `type`, `url`, `privacy`, `affiliate_ids`, `group_ids`, `meta`. |
 
 **Source:** `../fluent-affiliate-pro/app/Http/Controllers/CreativeController.php`
 
 ```php
-add_filter('fluent_affiliate/update_creative_data', function($data, $creative) {
+add_filter('fluent_affiliate/update_creative_data', function($data) {
+    // Prevent type from being changed via the API
+    unset($data['type']);
     return $data;
-}, 10, 2);
+});
 ```
 

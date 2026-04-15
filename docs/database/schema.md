@@ -95,7 +95,7 @@ erDiagram
 
 Represents a registered affiliate. Central model in FluentAffiliate.
 
-**Model class:** [`Affiliate`](/database/models/affiliates)
+**Model class:** [`Affiliate`](/database/models/affiliate)
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
@@ -122,7 +122,7 @@ Represents a registered affiliate. Central model in FluentAffiliate.
 
 Represents a commission event generated when a referred visitor completes a qualifying action.
 
-**Model class:** [`Referral`](/database/models/referrals)
+**Model class:** [`Referral`](/database/models/referral)
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
@@ -143,7 +143,7 @@ Represents a commission event generated when a referred visitor completes a qual
 | `products` | `LONGTEXT` | YES | — | JSON list of product IDs in the order. |
 | `payout_transaction_id` | `BIGINT(20)` | YES | — | Payout transaction that included this referral. |
 | `payout_id` | `BIGINT(20)` | YES | — | Parent payout record. |
-| `type` | `VARCHAR(100)` | YES | `sale` | Creative type — `image`, `text`, `html`, `banner`. |
+| `type` | `VARCHAR(100)` | YES | `sale` | Referral type — `sale`, `opt_in`, or `recurring_sale`. |
 | `settings` | `LONGTEXT` | YES | — | Serialized JSON settings blob. |
 | `created_at` | `TIMESTAMP` | YES | — | Timestamp when the record was created. |
 | `updated_at` | `TIMESTAMP` | YES | — | Timestamp when the record was last updated. |
@@ -152,7 +152,7 @@ Represents a commission event generated when a referred visitor completes a qual
 
 A payout batch grouping multiple affiliate transactions.
 
-**Model class:** [`Payout`](/database/models/payouts)
+**Model class:** [`Payout`](/database/models/payout)
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
@@ -172,7 +172,7 @@ A payout batch grouping multiple affiliate transactions.
 
 An individual payout transaction for a single affiliate within a payout batch.
 
-**Model class:** [`Transaction`](/database/models/payout-transactions)
+**Model class:** [`Transaction`](/database/models/transaction)
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
@@ -192,7 +192,7 @@ An individual payout transaction for a single affiliate within a payout batch.
 
 Tracks each click of an affiliate referral link.
 
-**Model class:** [`Visit`](/database/models/visits)
+**Model class:** [`Visit`](/database/models/visit)
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
@@ -213,7 +213,7 @@ Tracks each click of an affiliate referral link.
 
 A customer who made a purchase through an affiliate link.
 
-**Model class:** [`Customer`](/database/models/customers)
+**Model class:** [`Customer`](/database/models/customer)
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
@@ -248,7 +248,7 @@ Generic key-value meta storage for affiliate and other objects.
 
 A marketing creative asset (banner, image, or text) managed in FluentAffiliate Pro.
 
-**Model class:** [`Creative`](/database/models/creatives)
+**Model class:** [`Creative`](/database/models/creative)
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|

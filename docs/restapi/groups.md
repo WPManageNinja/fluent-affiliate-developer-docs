@@ -1,126 +1,26 @@
 ---
 title: Affiliate Groups API
-description: REST API endpoints for Affiliate Groups.
+description: Affiliate group CRUD operations, member listing, overview stats, and group statistics.
 ---
 
-# Affiliate Groups
+# Affiliate Groups API <span class="pro-badge">PRO</span>
 
-**Base URL:** `https://yoursite.com/wp-json/fluent-affiliate/v2`
+Affiliate group CRUD operations, member listing, overview stats, and group statistics.
+
+## Authentication
+
+Affiliate group routes are protected by `AdminPolicy` and require WordPress administrator access.
 
 ## Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/groups/groups` | AffiliateGroupController::index |
-| `POST` | `/groups/groups` | AffiliateGroupController::store |
-| `PATCH` | `/groups/groups/{id}` | AffiliateGroupController::update |
-| `GET` | `/groups/groups/{id}` | AffiliateGroupController::show |
-| `GET` | `/groups/groups/{id}/affiliates` | AffiliateGroupController::affiliates |
-| `GET` | `/groups/groups/{id}/overview` | AffiliateGroupController::overview |
-| `GET` | `/groups/groups/{id}/statistics` | AffiliateGroupController::statistics |
-| `DELETE` | `/groups/groups/{id}` | AffiliateGroupController::destroy |
-
-## `GET /groups/groups`
-
-AffiliateGroupController::index
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `AffiliateGroupController::index`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/groups/groups \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `POST /groups/groups`
-
-AffiliateGroupController::store
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `AffiliateGroupController::store`
-
-```bash
-curl -X POST \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/groups/groups \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `PATCH /groups/groups/{id}`
-
-AffiliateGroupController::update
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `AffiliateGroupController::update`
-
-```bash
-curl -X PATCH \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/groups/groups/1 \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /groups/groups/{id}`
-
-AffiliateGroupController::show
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `AffiliateGroupController::show`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/groups/groups/1 \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /groups/groups/{id}/affiliates`
-
-AffiliateGroupController::affiliates
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `AffiliateGroupController::affiliates`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/groups/groups/1/affiliates \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /groups/groups/{id}/overview`
-
-AffiliateGroupController::overview
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `AffiliateGroupController::overview`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/groups/groups/1/overview \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /groups/groups/{id}/statistics`
-
-AffiliateGroupController::statistics
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `AffiliateGroupController::statistics`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/groups/groups/1/statistics \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `DELETE /groups/groups/{id}`
-
-AffiliateGroupController::destroy
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `AffiliateGroupController::destroy`
-
-```bash
-curl -X DELETE \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/groups/groups/1 \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
+| Method | Path | Edition | Operation | Controller |
+| --- | --- | --- | --- | --- |
+| `GET` | `/settings/groups` | <span class="pro-badge">PRO</span> | [List Groups](/restapi/operations/groups/list-groups) | `AffiliateGroupController@index` |
+| `POST` | `/settings/groups` | <span class="pro-badge">PRO</span> | [Create Group](/restapi/operations/groups/create-group) | `AffiliateGroupController@store` |
+| `PATCH` | `/settings/groups/{id}` | <span class="pro-badge">PRO</span> | [Update Group](/restapi/operations/groups/update-group) | `AffiliateGroupController@update` |
+| `GET` | `/settings/groups/{id}` | <span class="pro-badge">PRO</span> | [Get Group](/restapi/operations/groups/get-group) | `AffiliateGroupController@show` |
+| `GET` | `/settings/groups/{id}/affiliates` | <span class="pro-badge">PRO</span> | [List Group Affiliates](/restapi/operations/groups/list-group-affiliates) | `AffiliateGroupController@affiliates` |
+| `GET` | `/settings/groups/{id}/overview` | <span class="pro-badge">PRO</span> | [Get Group Overview](/restapi/operations/groups/get-group-overview) | `AffiliateGroupController@overview` |
+| `GET` | `/settings/groups/{id}/statistics` | <span class="pro-badge">PRO</span> | [Get Group Statistics](/restapi/operations/groups/get-group-statistics) | `AffiliateGroupController@statistics` |
+| `DELETE` | `/settings/groups/{id}` | <span class="pro-badge">PRO</span> | [Delete Group](/restapi/operations/groups/delete-group) | `AffiliateGroupController@destroy` |
 

@@ -31,7 +31,7 @@ Represents a commission event generated when a referred visitor completes a qual
 | `products` | `LONGTEXT` | YES | — | JSON list of product IDs in the order. |
 | `payout_transaction_id` | `BIGINT(20)` | YES | — | Payout transaction that included this referral. |
 | `payout_id` | `BIGINT(20)` | YES | — | Parent payout record. |
-| `type` | `VARCHAR(100)` | YES | `sale` | Creative type — `image`, `text`, `html`, `banner`. |
+| `type` | `VARCHAR(100)` | YES | `sale` | Referral type — `sale`, `opt_in`, or `recurring_sale`. |
 | `settings` | `LONGTEXT` | YES | — | Serialized JSON settings blob. |
 | `created_at` | `TIMESTAMP` | YES | — | Timestamp when the record was created. |
 | `updated_at` | `TIMESTAMP` | YES | — | Timestamp when the record was last updated. |

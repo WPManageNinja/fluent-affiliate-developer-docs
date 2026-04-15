@@ -1,182 +1,30 @@
 ---
 title: Affiliates API
-description: REST API endpoints for Affiliates.
+description: Affiliate listing, creation, updates, deletion, and per-affiliate statistics and transactions.
 ---
 
-# Affiliates
+# Affiliates API
 
-**Base URL:** `https://yoursite.com/wp-json/fluent-affiliate/v2`
+Affiliate listing, creation, updates, deletion, and per-affiliate statistics and transactions.
+
+## Authentication
+
+These routes are protected by `AffiliatePolicy`. Admin users have full access; affiliate-level users require the `read_all_affiliates` capability.
 
 ## Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/affiliates` | List all affiliates with pagination and filters. |
-| `GET` | `/affiliates/export` | Export affiliates as a CSV file. |
-| `POST` | `/affiliates` | Create a new affiliate. |
-| `GET` | `/affiliates/{id}` | Retrieve a single affiliate by ID. |
-| `DELETE` | `/affiliates/{id}` | Permanently delete an affiliate. |
-| `PATCH` | `/affiliates/{id}` | Update an affiliate's settings. |
-| `PATCH` | `/affiliates/{id}/status` | Change an affiliate's status. |
-| `GET` | `/affiliates/{id}/transactions` | List payout transactions for an affiliate. |
-| `GET` | `/affiliates/{id}/visits` | List visits for an affiliate. |
-| `GET` | `/affiliates/{id}/referrals` | List referrals for an affiliate. |
-| `GET` | `/affiliates/{id}/stats` | Get summary stats for an affiliate. |
-| `GET` | `/affiliates/{id}/statistics` | Get detailed statistics for an affiliate. |
-
-## `GET /affiliates`
-
-List all affiliates with pagination and filters.
-
-**Auth:** Admin or affiliate with `fa_view_affiliates` capability  
-**Controller:** `AffiliateController::index`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/affiliates \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /affiliates/export`
-
-Export affiliates as a CSV file.
-
-**Auth:** Admin or affiliate with `fa_view_affiliates` capability  
-**Controller:** `AffiliateController::export`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/affiliates/export \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `POST /affiliates`
-
-Create a new affiliate.
-
-**Auth:** Admin or affiliate with `fa_view_affiliates` capability  
-**Controller:** `AffiliateController::createAffiliate`
-
-```bash
-curl -X POST \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/affiliates \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /affiliates/{id}`
-
-Retrieve a single affiliate by ID.
-
-**Auth:** Admin or affiliate with `fa_view_affiliates` capability  
-**Controller:** `AffiliateController::getAffiliate`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/affiliates/1 \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `DELETE /affiliates/{id}`
-
-Permanently delete an affiliate.
-
-**Auth:** Admin or affiliate with `fa_view_affiliates` capability  
-**Controller:** `AffiliateController::deleteAffiliate`
-
-```bash
-curl -X DELETE \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/affiliates/1 \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `PATCH /affiliates/{id}`
-
-Update an affiliate's settings.
-
-**Auth:** Admin or affiliate with `fa_view_affiliates` capability  
-**Controller:** `AffiliateController::updateAffiliate`
-
-```bash
-curl -X PATCH \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/affiliates/1 \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `PATCH /affiliates/{id}/status`
-
-Change an affiliate's status.
-
-**Auth:** Admin or affiliate with `fa_view_affiliates` capability  
-**Controller:** `AffiliateController::updateAffiliateStatus`
-
-```bash
-curl -X PATCH \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/affiliates/1/status \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /affiliates/{id}/transactions`
-
-List payout transactions for an affiliate.
-
-**Auth:** Admin or affiliate with `fa_view_affiliates` capability  
-**Controller:** `AffiliateController::getTransactions`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/affiliates/1/transactions \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /affiliates/{id}/visits`
-
-List visits for an affiliate.
-
-**Auth:** Admin or affiliate with `fa_view_affiliates` capability  
-**Controller:** `AffiliateController::getVisits`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/affiliates/1/visits \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /affiliates/{id}/referrals`
-
-List referrals for an affiliate.
-
-**Auth:** Admin or affiliate with `fa_view_affiliates` capability  
-**Controller:** `AffiliateController::getReferrals`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/affiliates/1/referrals \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /affiliates/{id}/stats`
-
-Get summary stats for an affiliate.
-
-**Auth:** Admin or affiliate with `fa_view_affiliates` capability  
-**Controller:** `AffiliateController::getOverviewStats`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/affiliates/1/stats \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /affiliates/{id}/statistics`
-
-Get detailed statistics for an affiliate.
-
-**Auth:** Admin or affiliate with `fa_view_affiliates` capability  
-**Controller:** `AffiliateController::statistics`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/affiliates/1/statistics \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
+| Method | Path | Edition | Operation | Controller |
+| --- | --- | --- | --- | --- |
+| `GET` | `/affiliates` | Core | [List Affiliates](/restapi/operations/affiliates/list-affiliates) | `AffiliateController@index` |
+| `GET` | `/affiliates/export` | Core | [Export Affiliates](/restapi/operations/affiliates/export-affiliates) | `AffiliateController@export` |
+| `POST` | `/affiliates` | Core | [Create Affiliate](/restapi/operations/affiliates/create-affiliate) | `AffiliateController@createAffiliate` |
+| `GET` | `/affiliates/{id}` | Core | [Get Affiliate](/restapi/operations/affiliates/get-affiliate) | `AffiliateController@getAffiliate` |
+| `DELETE` | `/affiliates/{id}` | Core | [Delete Affiliate](/restapi/operations/affiliates/delete-affiliate) | `AffiliateController@deleteAffiliate` |
+| `PATCH` | `/affiliates/{id}` | Core | [Update Affiliate](/restapi/operations/affiliates/update-affiliate) | `AffiliateController@updateAffiliate` |
+| `PATCH` | `/affiliates/{id}/status` | Core | [Update Affiliate Status](/restapi/operations/affiliates/update-affiliate-status) | `AffiliateController@updateAffiliateStatus` |
+| `GET` | `/affiliates/{id}/transactions` | Core | [List Affiliate Transactions](/restapi/operations/affiliates/list-affiliate-transactions) | `AffiliateController@getTransactions` |
+| `GET` | `/affiliates/{id}/visits` | Core | [List Affiliate Visits](/restapi/operations/affiliates/list-affiliate-visits) | `AffiliateController@getVisits` |
+| `GET` | `/affiliates/{id}/referrals` | Core | [List Affiliate Referrals](/restapi/operations/affiliates/list-affiliate-referrals) | `AffiliateController@getReferrals` |
+| `GET` | `/affiliates/{id}/stats` | Core | [Get Affiliate Stats](/restapi/operations/affiliates/get-affiliate-stats) | `AffiliateController@getOverviewStats` |
+| `GET` | `/affiliates/{id}/statistics` | Core | [Get Affiliate Statistics](/restapi/operations/affiliates/get-affiliate-statistics) | `AffiliateController@statistics` |
 

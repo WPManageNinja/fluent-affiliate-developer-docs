@@ -1,31 +1,21 @@
 ---
-title: Hooks Overview
-description: Overview of all FluentAffiliate WordPress action and filter hooks.
+title: Filter Hooks
+description: All FluentAffiliate WordPress filter hooks, organized by category.
 ---
 
-# Hooks Overview
+# Filter Hooks
 
-FluentAffiliate registers **31 action hooks** and **79 filter hooks** (including dynamic variants).
-
-## Action Hooks
+FluentAffiliate exposes **78 filter hooks** (including dynamic variants). Use `add_filter()` to modify data or behaviour.
 
 | Category | Description |
 |----------|-------------|
-| [Affiliates](/hooks/actions/affiliates) | Affiliate lifecycle events |
-| [Referrals](/hooks/actions/referrals) | Referral creation and status changes |
-| [Payouts](/hooks/actions/payouts) | Payout and transaction events |
-| [Portal](/hooks/actions/portal) | Customer portal render hooks |
-| [Integrations](/hooks/actions/integrations) | Third-party integration events |
-
-## Filter Hooks
-
-| Category | Description |
-|----------|-------------|
-| [Affiliates](/hooks/filters/affiliates) | Affiliate data and behaviour filters |
-| [Referrals](/hooks/filters/referrals) | Commission and referral data filters |
-| [Permissions](/hooks/filters/permissions) | Access control filters |
-| [Portal](/hooks/filters/portal) | Affiliate portal UI filters |
-| [Settings](/hooks/filters/settings) | Plugin configuration filters |
-| [Auth](/hooks/filters/auth) | Registration and login filters |
-| [Integrations](/hooks/filters/integrations) | Integration config and data filters |
+| [Affiliates](/hooks/filters/affiliates) | Affiliate data, rate calculation, and display filters |
+| [Referrals](/hooks/filters/referrals) | Commission amounts, referral data, and provider URL filters |
+| [Permissions](/hooks/filters/permissions) | Access control and capability checks |
+| [Portal](/hooks/filters/portal) | Affiliate portal UI, menus, and smart-code filters |
+| [Settings](/hooks/filters/settings) | Plugin configuration, admin UI, and JS variable filters |
+| [Auth](/hooks/filters/auth) | Registration form, login, and reserved username filters |
+| [Integrations](/hooks/filters/integrations) | Integration configuration, menu labels, and product option filters |
+| [Groups](/hooks/filters/groups) | Affiliate group data filters <span class="pro-badge">PRO</span> |
+| [Creatives](/hooks/filters/creatives) | Creative asset data filters <span class="pro-badge">PRO</span> |
 

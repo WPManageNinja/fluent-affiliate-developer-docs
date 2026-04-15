@@ -1,0 +1,118 @@
+{
+  "reports": [
+    "list-advanced-providers",
+    "get-commerce-report",
+    "get-dashboard-stats",
+    "get-dashboard-chart-stats"
+  ],
+  "affiliates": [
+    "list-affiliates",
+    "export-affiliates",
+    "create-affiliate",
+    "get-affiliate",
+    "delete-affiliate",
+    "update-affiliate",
+    "update-affiliate-status",
+    "list-affiliate-transactions",
+    "list-affiliate-visits",
+    "list-affiliate-referrals",
+    "get-affiliate-stats",
+    "get-affiliate-statistics"
+  ],
+  "referrals": [
+    "list-referrals",
+    "export-referrals",
+    "create-referral",
+    "get-referral",
+    "update-referral",
+    "delete-referral"
+  ],
+  "payouts": [
+    "list-payouts",
+    "validate-payout-config",
+    "process-payout",
+    "get-payout",
+    "list-payout-referrals",
+    "list-payout-transactions",
+    "export-payout-transactions",
+    "delete-payout-transaction",
+    "update-payout-transaction",
+    "bulk-update-payout-transactions",
+    "update-payout"
+  ],
+  "visits": [
+    "list-visits",
+    "export-visits"
+  ],
+  "settings": [
+    "get-email-config",
+    "update-email-config",
+    "list-email-templates",
+    "update-email-templates",
+    "update-email-template",
+    "list-features",
+    "get-feature-settings",
+    "update-feature-settings",
+    "install-addon",
+    "list-integrations",
+    "get-integration-config",
+    "save-integration-config",
+    "update-integration-status",
+    "get-integration-product-options",
+    "list-pages",
+    "create-page",
+    "get-referral-config",
+    "update-referral-config",
+    "list-migrations",
+    "start-migration",
+    "get-migration-status",
+    "wipe-data",
+    "get-migration-statistics",
+    "get-affiliate-options",
+    "get-user-options",
+    "get-registration-fields",
+    "get-affiliate-group-options",
+    "update-registration-fields",
+    "list-managers",
+    "update-managers",
+    "delete-manager"
+  ],
+  "portal": [
+    "get-portal-stats",
+    "list-portal-referrals",
+    "list-portal-transactions",
+    "list-portal-visits",
+    "get-portal-settings",
+    "update-portal-settings"
+  ],
+  "connected-sites": [
+    "get-connected-sites-config",
+    "update-connected-sites-status",
+    "update-connected-site",
+    "issue-site-token",
+    "disconnect-site"
+  ],
+  "groups": [
+    "list-groups",
+    "create-group",
+    "update-group",
+    "get-group",
+    "list-group-affiliates",
+    "get-group-overview",
+    "get-group-statistics",
+    "delete-group"
+  ],
+  "creatives": [
+    "list-creatives",
+    "get-creative",
+    "create-creative",
+    "update-creative",
+    "delete-creative",
+    "list-portal-creatives"
+  ],
+  "license": [
+    "get-license",
+    "save-license",
+    "delete-license"
+  ]
+}

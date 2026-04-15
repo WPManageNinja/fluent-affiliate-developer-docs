@@ -138,10 +138,11 @@ export default {
   computed: {
     statItems() {
       return [
-        { value: this.stats.models,  label: 'Models' },
-        { value: this.stats.routes,  label: 'API Routes' },
-        { value: this.stats.hooks,   label: 'Hooks' },
-        { value: this.stats.tables,  label: 'DB Tables' },
+        { value: this.stats.models,       label: 'Models' },
+        { value: this.stats.routes,       label: 'API Routes' },
+        { value: this.stats.hooks,        label: 'Hooks' },
+        { value: this.stats.tables,       label: 'DB Tables' },
+        { value: this.stats.openapiSpecs, label: 'OpenAPI Specs' },
       ]
     },
   },

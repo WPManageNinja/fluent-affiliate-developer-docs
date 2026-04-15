@@ -1,70 +1,22 @@
 ---
 title: Reports API
-description: REST API endpoints for Reports.
+description: Dashboard statistics, chart data, advanced commerce reports, and report provider listing.
 ---
 
-# Reports
+# Reports API
 
-**Base URL:** `https://yoursite.com/wp-json/fluent-affiliate/v2`
+Dashboard statistics, chart data, advanced commerce reports, and report provider listing.
+
+## Authentication
+
+Reports routes use `UserPolicy`. Dashboard stats require admin access; advanced report access depends on user capabilities.
 
 ## Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/reportsadvanced-providers` | ReportsController::getAdvancedReportProviders |
-| `GET` | `/reportscommerce-reports/{provider}` | ReportsController::getReports |
-| `GET` | `/reportsdashboard-stats` | DashboardController::getStats |
-| `GET` | `/reportsdashboard-chart-stats` | DashboardController::getChartStats |
-
-## `GET /reportsadvanced-providers`
-
-ReportsController::getAdvancedReportProviders
-
-**Auth:** Any authenticated WordPress user  
-**Controller:** `ReportsController::getAdvancedReportProviders`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/reportsadvanced-providers \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /reportscommerce-reports/{provider}`
-
-ReportsController::getReports
-
-**Auth:** Any authenticated WordPress user  
-**Controller:** `ReportsController::getReports`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/reportscommerce-reports/VALUE \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /reportsdashboard-stats`
-
-DashboardController::getStats
-
-**Auth:** Any authenticated WordPress user  
-**Controller:** `DashboardController::getStats`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/reportsdashboard-stats \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `GET /reportsdashboard-chart-stats`
-
-DashboardController::getChartStats
-
-**Auth:** Any authenticated WordPress user  
-**Controller:** `DashboardController::getChartStats`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/reportsdashboard-chart-stats \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
+| Method | Path | Edition | Operation | Controller |
+| --- | --- | --- | --- | --- |
+| `GET` | `/reports/advanced-providers` | Core | [List Advanced Providers](/restapi/operations/reports/list-advanced-providers) | `ReportsController@getAdvancedReportProviders` |
+| `GET` | `/reports/commerce-reports/{provider}` | Core | [Get Commerce Report](/restapi/operations/reports/get-commerce-report) | `ReportsController@getReports` |
+| `GET` | `/reports/dashboard-stats` | Core | [Get Dashboard Stats](/restapi/operations/reports/get-dashboard-stats) | `DashboardController@getStats` |
+| `GET` | `/reports/dashboard-chart-stats` | Core | [Get Dashboard Chart Stats](/restapi/operations/reports/get-dashboard-chart-stats) | `DashboardController@getChartStats` |
 

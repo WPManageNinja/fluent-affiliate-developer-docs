@@ -1,84 +1,23 @@
 ---
 title: Connected Sites API
-description: REST API endpoints for Connected Sites.
+description: Connected site configuration management, token issuance, and site disconnect operations.
 ---
 
-# Connected Sites
+# Connected Sites API <span class="pro-badge">PRO</span>
 
-**Base URL:** `https://yoursite.com/wp-json/fluent-affiliate/v2`
+Connected site configuration management, token issuance, and site disconnect operations.
+
+## Authentication
+
+Connected Sites routes are protected by `AdminPolicy` and require WordPress administrator access.
 
 ## Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/connected-sitesconnected-sites-config` | DomainController::getConnectedConfig |
-| `PATCH` | `/connected-sitesconnected-sites-config` | DomainController::updateGlobalStatus |
-| `PATCH` | `/connected-sitesconnected-sites-config/update` | DomainController::patchSingleSiteConfig |
-| `POST` | `/connected-sitesconnected-sites-config/issue` | DomainController::validateAndIssueNewSiteToken |
-| `POST` | `/connected-sitesconnected-sites-config/disconnect` | DomainController::disconnectSite |
-
-## `GET /connected-sitesconnected-sites-config`
-
-DomainController::getConnectedConfig
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `DomainController::getConnectedConfig`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/connected-sitesconnected-sites-config \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `PATCH /connected-sitesconnected-sites-config`
-
-DomainController::updateGlobalStatus
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `DomainController::updateGlobalStatus`
-
-```bash
-curl -X PATCH \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/connected-sitesconnected-sites-config \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `PATCH /connected-sitesconnected-sites-config/update`
-
-DomainController::patchSingleSiteConfig
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `DomainController::patchSingleSiteConfig`
-
-```bash
-curl -X PATCH \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/connected-sitesconnected-sites-config/update \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `POST /connected-sitesconnected-sites-config/issue`
-
-DomainController::validateAndIssueNewSiteToken
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `DomainController::validateAndIssueNewSiteToken`
-
-```bash
-curl -X POST \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/connected-sitesconnected-sites-config/issue \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `POST /connected-sitesconnected-sites-config/disconnect`
-
-DomainController::disconnectSite
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `DomainController::disconnectSite`
-
-```bash
-curl -X POST \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/connected-sitesconnected-sites-config/disconnect \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
+| Method | Path | Edition | Operation | Controller |
+| --- | --- | --- | --- | --- |
+| `GET` | `/settings/connected-sites-config` | <span class="pro-badge">PRO</span> | [Get Connected Sites Config](/restapi/operations/connected-sites/get-connected-sites-config) | `DomainController@getConnectedConfig` |
+| `PATCH` | `/settings/connected-sites-config` | <span class="pro-badge">PRO</span> | [Update Connected Sites Status](/restapi/operations/connected-sites/update-connected-sites-status) | `DomainController@updateGlobalStatus` |
+| `PATCH` | `/settings/connected-sites-config/update` | <span class="pro-badge">PRO</span> | [Update Connected Site](/restapi/operations/connected-sites/update-connected-site) | `DomainController@patchSingleSiteConfig` |
+| `POST` | `/settings/connected-sites-config/issue` | <span class="pro-badge">PRO</span> | [Issue Site Token](/restapi/operations/connected-sites/issue-site-token) | `DomainController@validateAndIssueNewSiteToken` |
+| `POST` | `/settings/connected-sites-config/disconnect` | <span class="pro-badge">PRO</span> | [Disconnect Site](/restapi/operations/connected-sites/disconnect-site) | `DomainController@disconnectSite` |
 

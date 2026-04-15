@@ -11,8 +11,7 @@ description: Action hooks in the Affiliates category.
 |------|-------------|
 | [`fluent_affiliate/admin_app_rendering`](#fluent-affiliate-admin-app-rendering) | Fired just before the admin SPA is rendered. |
 | [`fluent_affiliate/affiliate_updated`](#fluent-affiliate-affiliate-updated) | Fired after an affiliate record is updated by an admin. |
-| [`fluent_affiliate/affiliate_status_to_{affiliate}`](#fluent-affiliate-affiliate-status-to-affiliate) | See source. |
-| [`fluent_affiliate/wipe_current_data`](#fluent-affiliate-wipe-current-data) | Fired when an admin triggers a full data-wipe via the migration tools. |
+| [`fluent_affiliate/affiliate_status_to_{status}`](#fluent-affiliate-affiliate-status-to-status) | Fired when an affiliate's status changes. |
 | [`fluent_affiliate/affiliate_created`](#fluent-affiliate-affiliate-created) | Fired after a new affiliate record is created. |
 | [`fluent_affiliate/affiliate_status_to_active`](#fluent-affiliate-affiliate-status-to-active) | See source. |
 
@@ -48,23 +47,24 @@ add_action('fluent_affiliate/affiliate_updated', function($affiliate, $by, $data
 }, 10, 3);
 ```
 
-## `fluent_affiliate/affiliate_status_to_{affiliate}`
+## `fluent_affiliate/affiliate_status_to_{status}`
 
-Dynamic hook — the suffix is determined at runtime. See source for exact usage.
+Fired when an affiliate's status changes. The hook name is dynamic: the suffix is the **new** status (e.g. `active`, `inactive`, `banned`).
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$affiliate` | `Affiliate` | The Affiliate model with its new status. |
+| `$prevStatus` | `string` | The previous status, or an empty string on first activation. |
 
 **Source:** `app/Http/Controllers/AffiliateController.php`
 
-## `fluent_affiliate/wipe_current_data`
-
-Fired when an admin triggers a full data-wipe via the migration tools.
-
-**Source:** `app/Http/Controllers/MigrationController.php`
-
 ```php
-add_action('fluent_affiliate/wipe_current_data', function() {
-    // Remove plugin data that is not in FA tables.
-    delete_option('my_plugin_affiliate_cache');
-});
+// Fires for any status change
+add_action('fluent_affiliate/affiliate_status_to_active', function($affiliate, $prevStatus) {
+    // e.g. send a "you're approved" email
+}, 10, 2);
 ```
 
 ## `fluent_affiliate/affiliate_created`

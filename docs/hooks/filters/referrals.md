@@ -12,8 +12,7 @@ description: Filter hooks in the Referrals category.
 | [`fluent_affiliate/referral_config_field_types`](#fluent-affiliate-referral-config-field-types) | Filters the allowed field types in the referral program configuration form. |
 | [`fluent_affiliate/referral_formats`](#fluent-affiliate-referral-formats) | Filters the available referral link formats (URL parameter styles). |
 | [`fluent_affiliate/data_export_limit`](#fluent-affiliate-data-export-limit) | Filters the maximum number of rows returned in CSV exports. |
-| [`fluent_affiliate/provider_reference_{referral}`](#fluent-affiliate-provider-reference-referral) | See source. |
-| [`fluent_affiliate/provider_reference_{this}`](#fluent-affiliate-provider-reference-this) | See source. |
+| [`fluent_affiliate/provider_reference_{provider}_url`](#fluent-affiliate-provider-reference-provider-url) | Filters the admin URL for a referral's source order/payment. |
 | [`fluent_affiliate/ignore_zero_amount_referral`](#fluent-affiliate-ignore-zero-amount-referral) | Filters whether referrals with a zero commission amount should be discarded. |
 | [`fluent_affiliate/commission`](#fluent-affiliate-commission) | Filters the calculated commission amount before it is saved to a referral. |
 | [`fluent_affiliate/formatted_order_data_by_{this}`](#fluent-affiliate-formatted-order-data-by-this) | See source. |
@@ -74,17 +73,24 @@ add_filter('fluent_affiliate/data_export_limit', function($limit) {
 });
 ```
 
-## `fluent_affiliate/provider_reference_{referral}`
+## `fluent_affiliate/provider_reference_{provider}_url`
 
-Dynamic hook — the suffix is determined at runtime. See source for exact usage.
+Filters the admin URL for a referral's source order/payment. The suffix is the provider slug.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$url` | `string` | URL to the order/payment admin page. |
+| `$referral` | `Referral` | The Referral model. |
 
 **Source:** `app/Http/Controllers/ReferralController.php`
 
-## `fluent_affiliate/provider_reference_{this}`
-
-Dynamic hook — the suffix is determined at runtime. See source for exact usage.
-
-**Source:** `app/Models/Referral.php`
+```php
+add_filter('fluent_affiliate/provider_reference_my_plugin_url', function($url, $referral) {
+    return admin_url('admin.php?page=my-plugin&order=' . $referral->provider_id);
+}, 10, 2);
+```
 
 ## `fluent_affiliate/ignore_zero_amount_referral`
 

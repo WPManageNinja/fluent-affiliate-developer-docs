@@ -12,6 +12,7 @@ description: Filter hooks in the Integrations category.
 | [`fluent_affiliate/get_integrations`](#fluent-affiliate-get-integrations) | Filters the array of registered integration definitions shown in Settings → Integrations. |
 | [`fluent_affiliate/get_integration_config_{integration}`](#fluent-affiliate-get-integration-config-integration) | Filters the configuration data for a specific integration. |
 | [`fluent_affiliate/save_integration_config_{integration}`](#fluent-affiliate-save-integration-config-integration) | Filters the result of saving an integration's configuration. |
+| [`fluent_affiliate/get_product_cat_options_{integration}`](#fluent-affiliate-get-product-cat-options-integration) | Dynamic filter for populating the product/category options list in an integration settings form. |
 | [`fluent_affiliate/migrators`](#fluent-affiliate-migrators) | Filters the list of available data migrators in the Migration Tools. |
 | [`fluent_affiliate/get_migration_statistics`](#fluent-affiliate-get-migration-statistics) | Filters migration statistics shown in the admin migration tools. |
 | [`fluent_affiliate/get_current_data_counts`](#fluent-affiliate-get-current-data-counts) | Filters the current data counts displayed before a wipe operation. |
@@ -81,6 +82,26 @@ add_filter('fluent_affiliate/save_integration_config_my_plugin', function($messa
     update_option('my_plugin_api_key', sanitize_text_field($config['api_key'] ?? ''));
     return ''; // return empty string = success
 }, 10, 2);
+```
+
+## `fluent_affiliate/get_product_cat_options_{integration}`
+
+Dynamic filter for populating the product/category options list in an integration settings form. The `{integration}` segment is the integration slug (e.g. `woo`, `edd`). Return an array of `{ id, name }` objects.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$options` | `array` | Array of option objects, each with `id` (int) and `name` (string). |
+
+**Source:** `app/Http/Controllers/IntegrationController.php`
+
+```php
+// Example: add a custom option to the WooCommerce product category list
+add_filter('fluent_affiliate/get_product_cat_options_woo', function($options) {
+    $options[] = ['id' => 999, 'name' => 'My Custom Category'];
+    return $options;
+});
 ```
 
 ## `fluent_affiliate/migrators`
@@ -228,7 +249,7 @@ Filters the label text for the FluentAffiliate link in the WooCommerce My Accoun
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `$label` | `string` | The menu item label. Defaults to `'Affiliate Portal'`. |
+| `$label` | `string` | The menu item label. Defaults to `'Affiliate Dashboard'`. |
 
 **Source:** `../fluent-affiliate-pro/app/Services/Integrations/WooCommerce/Bootstrap.php`
 

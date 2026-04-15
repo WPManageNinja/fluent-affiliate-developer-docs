@@ -1,56 +1,21 @@
 ---
 title: License API
-description: REST API endpoints for License.
+description: Pro license status retrieval, activation, and deactivation.
 ---
 
-# License
+# License API <span class="pro-badge">PRO</span>
 
-**Base URL:** `https://yoursite.com/wp-json/fluent-affiliate/v2`
+Pro license status retrieval, activation, and deactivation.
+
+## Authentication
+
+License routes are protected by `AdminPolicy` and require WordPress administrator access.
 
 ## Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/license/license` | LicenseController::getStatus |
-| `POST` | `/license/license` | LicenseController::saveLicense |
-| `DELETE` | `/license/license` | LicenseController::deactivateLicense |
-
-## `GET /license/license`
-
-LicenseController::getStatus
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `LicenseController::getStatus`
-
-```bash
-curl -X GET \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/license/license \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `POST /license/license`
-
-LicenseController::saveLicense
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `LicenseController::saveLicense`
-
-```bash
-curl -X POST \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/license/license \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
-
-## `DELETE /license/license`
-
-LicenseController::deactivateLicense
-
-**Auth:** WordPress administrator (`manage_options`)  
-**Controller:** `LicenseController::deactivateLicense`
-
-```bash
-curl -X DELETE \
-  https://yoursite.com/wp-json/fluent-affiliate/v2/license/license \
-  -H "X-WP-Nonce: YOUR_NONCE"
-```
+| Method | Path | Edition | Operation | Controller |
+| --- | --- | --- | --- | --- |
+| `GET` | `/settings/license` | <span class="pro-badge">PRO</span> | [Get License](/restapi/operations/license/get-license) | `LicenseController@getStatus` |
+| `POST` | `/settings/license` | <span class="pro-badge">PRO</span> | [Save License](/restapi/operations/license/save-license) | `LicenseController@saveLicense` |
+| `DELETE` | `/settings/license` | <span class="pro-badge">PRO</span> | [Delete License](/restapi/operations/license/delete-license) | `LicenseController@deactivateLicense` |
 
