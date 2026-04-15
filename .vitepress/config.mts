@@ -8,6 +8,7 @@ const databaseSidebar = [
     items: [
       { text: 'Schema', link: '/database/schema' },
       { text: 'Models Overview', link: '/database/models/' },
+      { text: 'Query Builder', link: '/database/query-builder' },
     ],
   },
   {
@@ -192,6 +193,7 @@ export default defineConfig({
         items: [
           { text: 'Schema', link: '/database/schema' },
           { text: 'Models', link: '/database/models/' },
+          { text: 'Query Builder', link: '/database/query-builder' },
         ],
       },
       {
@@ -262,7 +264,7 @@ export default defineConfig({
       text: 'Edit this page on GitHub',
     },
     footer: {
-      message: 'Released under the GPL-2.0 License.',
+      message: 'FluentAffiliate developer documentation',
       copyright: 'Copyright © WPManageNinja',
     },
   },
