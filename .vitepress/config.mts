@@ -232,7 +232,7 @@ export default defineConfig({
   ignoreDeadLinks: true,
   cleanUrls: true,
   head: [
-    ['link', { rel: 'icon', type: 'image/webp', href: '/images/favicon.webp' }],
+    ['link', { rel: 'icon', type: 'image/webp', href: '/favicon/favicon.webp' }],
     ['meta', { name: 'theme-color', content: '#2271b1' }],
     ['meta', { property: 'og:title', content: 'FluentAffiliate Developer Docs' }],
     [
