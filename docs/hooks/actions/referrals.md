@@ -15,6 +15,7 @@ description: Action hooks in the Referrals category.
 | [`fluent_affiliate/referral_created`](#fluent-affiliate-referral-created) | Fired after a new referral record is inserted into the database. |
 | [`fluent_affiliate/referral_marked_rejected`](#fluent-affiliate-referral-marked-rejected) | Fired after a referral is marked as rejected. |
 | [`fluent_affiliate/referral_commission_updated`](#fluent-affiliate-referral-commission-updated) | Fired after the commission amount on an existing referral is updated. |
+| [`fluent_affiliate/recurring_referral_created`](#fluent-affiliate-recurring-referral-created) | Fired after a recurring referral is recorded for a subscription renewal (WooCommerce Subscriptions or FluentCart). |
 
 ## `fluent_affiliate/referral_marked_unpaid`
 
@@ -122,6 +123,27 @@ Fired after the commission amount on an existing referral is updated.
 ```php
 add_action('fluent_affiliate/referral_commission_updated', function($referral) {
     // Sync the new amount to an external system.
+});
+```
+
+## `fluent_affiliate/recurring_referral_created`
+
+Fired after a recurring referral is recorded for a subscription renewal (WooCommerce Subscriptions or FluentCart). Fires on every renewal, not just the first.
+
+> **Requires FluentAffiliate Pro.**
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$referral` | `Referral` | The newly created Referral model for this renewal. |
+
+**Source:** `../fluent-affiliate-pro/app/Services/Integrations/FluentCart/RecurringReferral.php`
+
+```php
+add_action('fluent_affiliate/recurring_referral_created', function($referral) {
+    // Log each recurring commission for external reporting
+    my_plugin_log_recurring_commission($referral->affiliate_id, $referral->amount);
 });
 ```
 

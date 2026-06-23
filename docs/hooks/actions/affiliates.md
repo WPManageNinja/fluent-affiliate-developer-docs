@@ -11,6 +11,8 @@ description: Action hooks in the Affiliates category.
 |------|-------------|
 | [`fluent_affiliate/admin_app_rendering`](#fluent-affiliate-admin-app-rendering) | Fired just before the admin SPA is rendered. |
 | [`fluent_affiliate/affiliate_updated`](#fluent-affiliate-affiliate-updated) | Fired after an affiliate record is updated by an admin. |
+| [`fluent_affiliate/before_delete_affiliate`](#fluent-affiliate-before-delete-affiliate) | Fires immediately before an affiliate is permanently deleted. |
+| [`fluent_affiliate/after_delete_affiliate`](#fluent-affiliate-after-delete-affiliate) | Fires after an affiliate has been permanently deleted. |
 | [`fluent_affiliate/affiliate_status_to_{status}`](#fluent-affiliate-affiliate-status-to-status) | Fired when an affiliate's status changes. |
 | [`fluent_affiliate/affiliate_created`](#fluent-affiliate-affiliate-created) | Fired after a new affiliate record is created. |
 | [`fluent_affiliate/affiliate_status_to_active`](#fluent-affiliate-affiliate-status-to-active) | See source. |
@@ -45,6 +47,42 @@ Fired after an affiliate record is updated by an admin.
 add_action('fluent_affiliate/affiliate_updated', function($affiliate, $by, $data) {
     // Log the change or notify an external system.
 }, 10, 3);
+```
+
+## `fluent_affiliate/before_delete_affiliate`
+
+Fires immediately before an affiliate is permanently deleted.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$affiliate` | `Affiliate` | The affiliate about to be deleted. |
+
+**Source:** `app/Http/Controllers/AffiliateController.php`
+
+```php
+add_action('fluent_affiliate/before_delete_affiliate', function($affiliate) {
+    error_log('Deleting affiliate #' . $affiliate->id);
+});
+```
+
+## `fluent_affiliate/after_delete_affiliate`
+
+Fires after an affiliate has been permanently deleted.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$affiliateId` | `int` | The ID of the deleted affiliate. |
+
+**Source:** `app/Http/Controllers/AffiliateController.php`
+
+```php
+add_action('fluent_affiliate/after_delete_affiliate', function($affiliateId) {
+    // Clean up related custom data.
+});
 ```
 
 ## `fluent_affiliate/affiliate_status_to_{status}`

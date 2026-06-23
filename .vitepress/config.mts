@@ -73,6 +73,7 @@ const filterHookPages = [
   { text: 'Affiliates', link: '/hooks/filters/affiliates' },
   { text: 'Groups (Pro)', link: '/hooks/filters/groups' },
   { text: 'Referrals', link: '/hooks/filters/referrals' },
+  { text: 'Payouts', link: '/hooks/filters/payouts' },
   { text: 'Permissions (Pro)', link: '/hooks/filters/permissions' },
   { text: 'Portal', link: '/hooks/filters/portal' },
   { text: 'Settings', link: '/hooks/filters/settings' },

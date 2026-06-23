@@ -16,8 +16,12 @@
     "list-affiliate-transactions",
     "list-affiliate-visits",
     "list-affiliate-referrals",
+    "list-affiliate-customers",
     "get-affiliate-stats",
-    "get-affiliate-statistics"
+    "get-affiliate-statistics",
+    "search-affiliate-customers",
+    "link-affiliate-customer",
+    "unlink-affiliate-customer"
   ],
   "referrals": [
     "list-referrals",

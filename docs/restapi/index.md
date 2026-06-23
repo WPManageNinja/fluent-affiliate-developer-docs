@@ -5,7 +5,7 @@ description: Source-verified overview for the FluentAffiliate REST API.
 
 # FluentAffiliate REST API
 
-This reference covers 94 routes registered in the FluentAffiliate core and Pro route files.
+This reference covers 98 routes registered in the FluentAffiliate core and Pro route files.
 
 ## Base URL
 
@@ -32,7 +32,7 @@ All routes share the single base path `/wp-json/fluent-affiliate/v2`. There is n
 
 | Module | Edition | Route Count | Description |
 | --- | --- | --- | --- |
-| [Affiliates API](/restapi/affiliates) | Core | 12 | Affiliate listing, creation, updates, deletion, and per-affiliate statistics and transactions. |
+| [Affiliates API](/restapi/affiliates) | Core | 16 | Affiliate listing, creation, updates, deletion, and per-affiliate statistics and transactions. |
 | [Referrals API](/restapi/referrals) | Core | 6 | Referral listing, manual creation, updates, deletion, and CSV export. |
 | [Payouts API](/restapi/payouts) | Core | 11 | Payout batch management, transaction operations, payout processing, and CSV export. |
 | [Visits API](/restapi/visits) | Core | 2 | Affiliate visit tracking records — listing and CSV export. |
