@@ -5,7 +5,7 @@ description: Overview of all FluentAffiliate WordPress action and filter hooks.
 
 # Hooks Overview
 
-FluentAffiliate registers **31 action hooks** and **78 filter hooks** (including dynamic variants).
+FluentAffiliate registers **31 action hooks** and **82 filter hooks** (including dynamic variants).
 
 ## Action Hooks
 

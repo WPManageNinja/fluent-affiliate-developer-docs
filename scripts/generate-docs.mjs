@@ -581,6 +581,42 @@ add_action('fluent_affiliate/affiliate_status_to_active', function($affiliate, $
     return $widgets;
 }, 10, 2);`,
   },
+  'fluent_affiliate/affiliate_customers_query': {
+    desc: 'Filters the customer query for an affiliate before pagination. Pro uses this to narrow results by lifetime status (active/expired).',
+    params: [
+      { name: '$query',       type: 'Builder',   desc: 'The customers query, scoped to the affiliate.' },
+      { name: '$request',     type: 'Request',   desc: 'The current request.' },
+      { name: '$affiliateId', type: 'int',       desc: 'The affiliate ID.' },
+    ],
+    example: `add_filter('fluent_affiliate/affiliate_customers_query', function($query, $request, $affiliateId) {
+    return $query->where('status', 'active');
+}, 10, 3);`,
+  },
+  'fluent_affiliate/affiliate_customers_response': {
+    desc: 'Filters the customers response payload for an affiliate. Pro appends group-aware `lifetime_expiry_days` for the expiry display.',
+    params: [
+      { name: '$response',  type: 'array',     desc: 'Response payload (contains the paginated `customers`).' },
+      { name: '$affiliate', type: 'Affiliate', desc: 'The affiliate being viewed.' },
+      { name: '$request',   type: 'Request',   desc: 'The current request.' },
+    ],
+    example: `add_filter('fluent_affiliate/affiliate_customers_response', function($response, $affiliate, $request) {
+    $response['meta'] = ['lifetime' => true];
+    return $response;
+}, 10, 3);`,
+  },
+  'fluent_affiliate/referral_data': {
+    desc: 'Filters the referral data array before a referral is recorded by an integration.',
+    params: [
+      { name: '$data',     type: 'array',  desc: 'Referral data (amount, type, affiliate_id, provider, etc.).' },
+      { name: '$provider', type: 'string', desc: 'The integration provider key (e.g. `woo`, `edd`, `fluentcart`).' },
+    ],
+    example: `add_filter('fluent_affiliate/referral_data', function($data, $provider) {
+    if ($provider === 'woo') {
+        $data['amount'] = $data['amount'] * 1.1;
+    }
+    return $data;
+}, 10, 2);`,
+  },
   'fluent_affiliate/payout/before_create': {
     desc: 'Filters the payout data array before the payout record is created.',
     params: [
@@ -592,6 +628,69 @@ add_action('fluent_affiliate/affiliate_status_to_active', function($affiliate, $
     $payoutData['title'] = 'Custom: ' . $payoutData['title'];
     return $payoutData;
 }, 10, 3);`,
+  },
+  'fluent_affiliate/payout/before_processing': {
+    desc: 'Fires after the payout record is created but before referrals are processed into it. Return a `WP_Error` to abort processing — the empty payout is deleted and the error is returned to the client.',
+    params: [
+      { name: '$payout',      type: 'Payout', desc: 'The newly created (empty) payout record.' },
+      { name: '$affiliates',  type: 'array',  desc: 'Affiliates being included in the payout.' },
+      { name: '$dataConfig',  type: 'array',  desc: 'Payout configuration from the request.' },
+    ],
+    example: `add_filter('fluent_affiliate/payout/before_processing', function($payout, $affiliates, $dataConfig) {
+    if (count($affiliates) > 500) {
+        return new \\WP_Error('too_many', 'Batch too large.');
+    }
+    return $payout;
+}, 10, 3);`,
+  },
+  'fluent_affiliate/before_delete_affiliate': {
+    desc: 'Fires immediately before an affiliate is permanently deleted.',
+    params: [
+      { name: '$affiliate', type: 'Affiliate', desc: 'The affiliate about to be deleted.' },
+    ],
+    example: `add_action('fluent_affiliate/before_delete_affiliate', function($affiliate) {
+    error_log('Deleting affiliate #' . $affiliate->id);
+});`,
+  },
+  'fluent_affiliate/after_delete_affiliate': {
+    desc: 'Fires after an affiliate has been permanently deleted.',
+    params: [
+      { name: '$affiliateId', type: 'int', desc: 'The ID of the deleted affiliate.' },
+    ],
+    example: `add_action('fluent_affiliate/after_delete_affiliate', function($affiliateId) {
+    // Clean up related custom data.
+});`,
+  },
+  'fluent_affiliate/recurring_referral_created': {
+    desc: 'Fires after a recurring (subscription renewal) referral is created by a Pro integration.',
+    params: [
+      { name: '$referral', type: 'Referral', desc: 'The newly created recurring referral.' },
+    ],
+    example: `add_action('fluent_affiliate/recurring_referral_created', function($referral) {
+    // Notify the affiliate of a renewal commission.
+});`,
+  },
+  'fluent_affiliate/checkout_affiliate': {
+    desc: 'Filters the affiliate resolved at checkout for an order. Pro\'s lifetime commission feature uses this to attribute an order to the affiliate who originally referred the customer.',
+    params: [
+      { name: '$affiliate',    type: 'Affiliate|null', desc: 'The affiliate resolved from the tracking cookie, or `null`.' },
+      { name: '$customerData', type: 'array',          desc: 'Customer data for the order (email, name, etc.).' },
+      { name: '$provider',     type: 'string',         desc: 'The integration provider key (e.g. `woo`, `edd`).' },
+    ],
+    example: `add_filter('fluent_affiliate/checkout_affiliate', function($affiliate, $customerData, $provider) {
+    return $affiliate;
+}, 10, 3);`,
+  },
+  'fluent_affiliate/parse_smart_codes': {
+    desc: 'Parses smart codes (merge tags such as `{{affiliate.name}}`) in email and notification templates. Add a callback to resolve custom smart codes.',
+    params: [
+      { name: '$text', type: 'string', desc: 'The template text containing smart codes.' },
+      { name: '$data', type: 'array',  desc: 'Context data (affiliate, referral, etc.) for resolving codes.' },
+      { name: '$type', type: 'string', desc: 'The content type — `text` or `html`. Defaults to `text`.' },
+    ],
+    example: `add_filter('fluent_affiliate/parse_smart_codes', function($text, $data, $type) {
+    return str_replace('{{custom.tag}}', 'value', $text);
+}, 20, 3);`,
   },
   'fluent_affiliate/payout/before_processing': {
     desc: 'Filters the payout before it is processed. Return a `WP_Error` to halt processing.',
@@ -2070,6 +2169,7 @@ function buildFilterHooksIndexDoc(filterMap) {
     '|----------|-------------|',
     '| [Affiliates](/hooks/filters/affiliates) | Affiliate data, rate calculation, and display filters |',
     '| [Referrals](/hooks/filters/referrals) | Commission amounts, referral data, and provider URL filters |',
+    '| [Payouts](/hooks/filters/payouts) | Payout creation and pre-processing filters |',
     '| [Permissions](/hooks/filters/permissions) | Access control and capability checks |',
     '| [Portal](/hooks/filters/portal) | Affiliate portal UI, menus, and smart-code filters |',
     '| [Settings](/hooks/filters/settings) | Plugin configuration, admin UI, and JS variable filters |',
@@ -2103,6 +2203,10 @@ const REST_DESCRIPTIONS = {
   'GET /affiliates/{id}/referrals': 'List referrals for an affiliate.',
   'GET /affiliates/{id}/stats':   'Get summary stats for an affiliate.',
   'GET /affiliates/{id}/statistics': 'Get detailed statistics for an affiliate.',
+  'GET /affiliates/{id}/customers': 'List the customers acquired by an affiliate.',
+  'GET /affiliates/{id}/customers/search': 'Search customers to link to an affiliate for lifetime commissions.',
+  'POST /affiliates/{id}/customers/link': 'Link a customer to an affiliate for lifetime commissions.',
+  'DELETE /affiliates/{id}/customers/{customerId}': 'Unlink a customer from an affiliate.',
   // Referrals
   'GET /referrals':               'List referrals with filters.',
   'GET /referrals/export':        'Export referrals as CSV.',
@@ -2361,6 +2465,10 @@ const OPERATION_SLUG_MAP = [
   { module: 'affiliates', method: 'GET',    path: /^\/affiliates\/.+\/referrals$/, slug: 'list-affiliate-referrals' },
   { module: 'affiliates', method: 'GET',    path: /^\/affiliates\/.+\/stats$/, slug: 'get-affiliate-stats' },
   { module: 'affiliates', method: 'GET',    path: /^\/affiliates\/.+\/statistics$/, slug: 'get-affiliate-statistics' },
+  { module: 'affiliates', method: 'GET',    path: /^\/affiliates\/.+\/customers\/search$/, slug: 'search-affiliate-customers' },
+  { module: 'affiliates', method: 'GET',    path: /^\/affiliates\/.+\/customers$/, slug: 'list-affiliate-customers' },
+  { module: 'affiliates', method: 'POST',   path: /^\/affiliates\/.+\/customers\/link$/, slug: 'link-affiliate-customer' },
+  { module: 'affiliates', method: 'DELETE', path: /^\/affiliates\/.+\/customers\/.+$/, slug: 'unlink-affiliate-customer' },
   { module: 'affiliates', method: 'GET',    path: /^\/affiliates\/.+$/, slug: 'get-affiliate' },
   { module: 'affiliates', method: 'DELETE', path: /^\/affiliates\/.+$/, slug: 'delete-affiliate' },
   { module: 'affiliates', method: 'PATCH',  path: /^\/affiliates\/.+\/status$/, slug: 'update-affiliate-status' },
@@ -3867,20 +3975,21 @@ async function main() {
 
   const ACTION_PAGE_CATEGORIES = {
     integrations: h => /affiliate_created_via_fluent_form|wipe_current_data/.test(h),
-    affiliates:   h => /\/affiliate/.test(h) && !/affiliate_group/.test(h) || h === 'fluent_affiliate/admin_app_rendering',
+    affiliates:   h => (/\/affiliate|_delete_affiliate/.test(h) && !/affiliate_group/.test(h)) || h === 'fluent_affiliate/admin_app_rendering',
     groups:       h => /affiliate_group/.test(h),
-    referrals:    h => /\/referral/.test(h),
+    referrals:    h => /\/referral|recurring_referral/.test(h),
     payouts:      h => /\/payout/.test(h),
     portal:       h => /render_login|render_signup|email_head/.test(h),
     creatives:    h => /creative/.test(h),
   }
 
   const FILTER_PAGE_CATEGORIES = {
-    affiliates:   h => /\/affiliate/.test(h) && !/affiliate_group|affiliate_created_via/.test(h) && !/has_all|user_has_affiliate_access/.test(h),
+    affiliates:   h => /\/affiliate|checkout_affiliate/.test(h) && !/affiliate_group|affiliate_created_via/.test(h) && !/has_all|user_has_affiliate_access/.test(h),
     groups:       h => /affiliate_group/.test(h),
     referrals:    h => /\/referral|data_export_limit|provider_reference|\/commission|ignore_zero|formatted_order|recurring_commission/.test(h),
+    payouts:      h => /\/payout/.test(h),
     permissions:  h => /has_all_|user_has_affiliate_access/.test(h),
-    portal:       h => /\/portal|default_share_url|will_load_tracker|smartcode/.test(h),
+    portal:       h => /\/portal|default_share_url|will_load_tracker|smartcode|smart_code/.test(h),
     settings:     h => /get_email_config|update_email_config|get_referral_config|update_referral_config|get_feature|update_feature|settings_menu|top_menu|right_menu|admin_vars|dashboard_notices|admin_url|portal_page_url|registered_features|max_execution|is_rtl|suggested_colors|payout_form_schema|referral_formats|portal_menu_items|get_currencies|currency_symbols|referral_config_field_types|default_referral_settings|social_media|fluent_affiliate_base_url|fluent_affiliate_tracker_vars|fluent_affiliate_dashboard/.test(h),
     auth:         h => /\/auth\/|terms_policy|reserved_usernames/.test(h),
     integrations: h => /get_integrations|get_integration_config|save_integration_config|user_ip|\/migrators|get_migration|get_current_data|wppayform|advanced_report|woo_menu|product_cat_options/.test(h),
@@ -3923,6 +4032,7 @@ async function main() {
     affiliates:   'Affiliates',
     groups:       'Groups (Pro)',
     referrals:    'Referrals',
+    payouts:      'Payouts',
     permissions:  'Permissions (Pro)',
     portal:       'Portal',
     settings:     'Settings',

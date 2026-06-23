@@ -13,6 +13,7 @@ description: Filter hooks in the Referrals category.
 | [`fluent_affiliate/referral_formats`](#fluent-affiliate-referral-formats) | Filters the available referral link formats (URL parameter styles). |
 | [`fluent_affiliate/data_export_limit`](#fluent-affiliate-data-export-limit) | Filters the maximum number of rows returned in CSV exports. |
 | [`fluent_affiliate/provider_reference_{provider}_url`](#fluent-affiliate-provider-reference-provider-url) | Filters the admin URL for a referral's source order/payment. |
+| [`fluent_affiliate/referral_data`](#fluent-affiliate-referral-data) | Filters the referral data array before a referral is recorded by an integration. |
 | [`fluent_affiliate/ignore_zero_amount_referral`](#fluent-affiliate-ignore-zero-amount-referral) | Filters whether referrals with a zero commission amount should be discarded. |
 | [`fluent_affiliate/commission`](#fluent-affiliate-commission) | Filters the calculated commission amount before it is saved to a referral. |
 | [`fluent_affiliate/formatted_order_data_by_{this}`](#fluent-affiliate-formatted-order-data-by-this) | See source. |
@@ -89,6 +90,28 @@ Filters the admin URL for a referral's source order/payment. The suffix is the p
 ```php
 add_filter('fluent_affiliate/provider_reference_my_plugin_url', function($url, $referral) {
     return admin_url('admin.php?page=my-plugin&order=' . $referral->provider_id);
+}, 10, 2);
+```
+
+## `fluent_affiliate/referral_data`
+
+Filters the referral data array before a referral is recorded by an integration.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$data` | `array` | Referral data (amount, type, affiliate_id, provider, etc.). |
+| `$provider` | `string` | The integration provider key (e.g. `woo`, `edd`, `fluentcart`). |
+
+**Source:** `app/Modules/Integrations/BaseConnector.php`
+
+```php
+add_filter('fluent_affiliate/referral_data', function($data, $provider) {
+    if ($provider === 'woo') {
+        $data['amount'] = $data['amount'] * 1.1;
+    }
+    return $data;
 }, 10, 2);
 ```
 

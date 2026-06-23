@@ -5,12 +5,13 @@ description: All FluentAffiliate WordPress filter hooks, organized by category.
 
 # Filter Hooks
 
-FluentAffiliate exposes **78 filter hooks** (including dynamic variants). Use `add_filter()` to modify data or behaviour.
+FluentAffiliate exposes **82 filter hooks** (including dynamic variants). Use `add_filter()` to modify data or behaviour.
 
 | Category | Description |
 |----------|-------------|
 | [Affiliates](/hooks/filters/affiliates) | Affiliate data, rate calculation, and display filters |
 | [Referrals](/hooks/filters/referrals) | Commission amounts, referral data, and provider URL filters |
+| [Payouts](/hooks/filters/payouts) | Payout creation and pre-processing filters |
 | [Permissions](/hooks/filters/permissions) | Access control and capability checks |
 | [Portal](/hooks/filters/portal) | Affiliate portal UI, menus, and smart-code filters |
 | [Settings](/hooks/filters/settings) | Plugin configuration, admin UI, and JS variable filters |

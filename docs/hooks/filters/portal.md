@@ -12,6 +12,7 @@ description: Filter hooks in the Portal category.
 | [`fluent_affiliate/portal_menu_items`](#fluent-affiliate-portal-menu-items) | Filters the navigation items shown in the affiliate portal sidebar. |
 | [`fluent_affiliate/portal_page_url`](#fluent-affiliate-portal-page-url) | Filters the URL of the affiliate portal page. |
 | [`fluent_affiliate/default_share_url`](#fluent-affiliate-default-share-url) | Filters the default share URL used in affiliate tracking links when no specific page is configured. |
+| [`fluent_affiliate/parse_smart_codes`](#fluent-affiliate-parse-smart-codes) | Filters smart-code template strings before they are rendered. |
 | [`fluent_affiliate/portal_notice_html`](#fluent-affiliate-portal-notice-html) | Filters the HTML notice shown at the top of the affiliate portal. |
 | [`fluent_affiliate/will_load_tracker_js`](#fluent-affiliate-will-load-tracker-js) | Filters whether the affiliate tracking JavaScript is enqueued on the front end. |
 | [`fluent_affiliate/portal/pending_message`](#fluent-affiliate-portal-pending-message) | Filters the HTML shown to an affiliate whose account is pending approval. |
@@ -75,6 +76,26 @@ Filters the default share URL used in affiliate tracking links when no specific 
 add_filter('fluent_affiliate/default_share_url', function($url, $affiliate) {
     return home_url('/shop/');
 }, 10, 2);
+```
+
+## `fluent_affiliate/parse_smart_codes`
+
+Filters smart-code template strings before they are rendered. Used by the email notification system.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$output` | `string` | The rendered output string. |
+| `$context` | `array` | Context data: `affiliate`, `referral`, etc. |
+| `$type` | `string` | `"text"` or `"html"`. |
+
+**Source:** `app/Hooks/Handlers/EmailNotificationHandler.php`
+
+```php
+add_filter('fluent_affiliate/parse_smart_codes', function($output, $context, $type) {
+    return str_replace('{{my_tag}}', get_bloginfo('name'), $output);
+}, 10, 3);
 ```
 
 ## `fluent_affiliate/portal_notice_html`

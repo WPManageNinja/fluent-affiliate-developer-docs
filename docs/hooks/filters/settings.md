@@ -12,7 +12,6 @@ description: Filter hooks in the Settings category.
 | [`fluent_affiliate/get_currencies`](#fluent-affiliate-get-currencies) | Filters the list of available currencies. |
 | [`fluent_affiliate/currency_symbols`](#fluent-affiliate-currency-symbols) | Filters the currency symbol lookup table. |
 | [`fluent_affiliate/suggested_colors`](#fluent-affiliate-suggested-colors) | Filters the colour palette suggested in affiliate creative settings. |
-| [`fluent_affiliate/payout_form_schema`](#fluent-affiliate-payout-form-schema) | Filters the schema used to render the payout creation form in the admin. |
 | [`fluent_affiliate/default_referral_settings`](#fluent-affiliate-default-referral-settings) | Filters the default referral settings used when no custom configuration is saved. |
 | [`fluent_affiliate/admin_url`](#fluent-affiliate-admin-url) | Filters the FluentAffiliate admin URL. |
 | [`fluent_affiliate/registered_features`](#fluent-affiliate-registered-features) | Filters the list of feature modules registered with FluentAffiliate. |
@@ -87,24 +86,6 @@ Filters the colour palette suggested in affiliate creative settings.
 add_filter('fluent_affiliate/suggested_colors', function($colors) {
     $colors[] = '#ff5722';
     return $colors;
-});
-```
-
-## `fluent_affiliate/payout_form_schema`
-
-Filters the schema used to render the payout creation form in the admin.
-
-**Parameters**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `$schema` | `array` | Form field schema. |
-
-**Source:** `app/Helper/Helper.php`
-
-```php
-add_filter('fluent_affiliate/payout_form_schema', function($schema) {
-    return $schema;
 });
 ```
 
