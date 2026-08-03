@@ -13,6 +13,10 @@ Practical guides for extending and customizing FluentAffiliate.
 
 Build a complete e-commerce or booking integration using the `BaseConnector` + `BaseConnectorSettings` two-class pattern. Covers the full referral lifecycle — order events, commission calculation, customer records, self-referral prevention, and refund handling.
 
+### [FluentCRM Integration](/guides/fluentcrm)
+
+Automation triggers and actions, the affiliate CRM profile card (tag/list management from the affiliate screen), smart codes, contact import, and advanced filters.
+
 ### [Code Snippets](/guides/code-snippets)
 
 Source-verified, ready-to-use PHP snippets for the most common customization tasks: auto-approving affiliates, capping commissions, sending custom notifications, modifying portal menus, and more.
@@ -44,6 +48,14 @@ Track affiliates across multiple WordPress sites. Token-based cross-site authent
 ### [Recurring Commissions](/guides/recurring-commissions)
 
 Automatically pay affiliates for subscription renewals. WooCommerce Subscriptions and FluentCart recurring payments supported. Per-group recurring rate overrides.
+
+### [Custom Registration Fields](/guides/custom-registration-fields)
+
+Add custom fields to the affiliate registration form. Eight field types, values stored in the `fa_affiliates.custom_fields` JSON column, with validation and portal profile support.
+
+### [Captcha](/guides/captcha)
+
+Protect the registration form with Google reCAPTCHA v2/v3 — validated-keys-before-save gate, encrypted secrets, and a pluggable provider layer.
 
 ---
 

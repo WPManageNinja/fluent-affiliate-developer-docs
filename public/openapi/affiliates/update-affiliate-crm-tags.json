@@ -23,20 +23,30 @@
     }
   ],
   "paths": {
-    "/settings/email-config/emails": {
+    "/affiliates/{id}/crm-contact/tags": {
       "post": {
-        "operationId": "updateEmailTemplates",
-        "summary": "POST Update Email Templates",
-        "description": "Update all notification email templates.\n\nController: `SettingController@updateNotificationEmails`\nRoute source: `app/Http/Routes/api.php`",
+        "operationId": "updateAffiliateCrmTags",
+        "summary": "POST Update Affiliate CRM Tags",
+        "description": "Attach or detach FluentCRM tags on the affiliate's CRM contact.\n\nController: `AffiliateController@updateCrmTags`\nRoute source: `app/Http/Routes/api.php`",
         "tags": [
-          "Settings"
+          "Affiliates"
         ],
         "security": [
           {
             "ApplicationPasswords": []
           }
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
         "requestBody": {
           "required": false,
           "content": {
@@ -56,13 +66,22 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "tag_ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer"
+                      }
+                    },
+                    "list_ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer"
+                      }
+                    },
                     "message": {
                       "type": "string"
                     }
-                  },
-                  "required": [
-                    "message"
-                  ]
+                  }
                 }
               }
             }

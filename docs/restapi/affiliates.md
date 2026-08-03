@@ -1,11 +1,11 @@
 ---
 title: Affiliates API
-description: Affiliate listing, creation, updates, deletion, and per-affiliate statistics and transactions.
+description: Affiliate listing, creation, updates, deletion, per-affiliate statistics and transactions, FluentCRM contact management, and lifetime-commission customer links.
 ---
 
 # Affiliates API
 
-Affiliate listing, creation, updates, deletion, and per-affiliate statistics and transactions.
+Affiliate listing, creation, updates, deletion, per-affiliate statistics and transactions, FluentCRM contact management, and lifetime-commission customer links.
 
 ## Authentication
 
@@ -28,6 +28,10 @@ These routes are protected by `AffiliatePolicy`. Admin users have full access; a
 | `GET` | `/affiliates/{id}/customers` | Core | [List Affiliate Customers](/restapi/operations/affiliates/list-affiliate-customers) | `AffiliateController@getCustomers` |
 | `GET` | `/affiliates/{id}/stats` | Core | [Get Affiliate Stats](/restapi/operations/affiliates/get-affiliate-stats) | `AffiliateController@getOverviewStats` |
 | `GET` | `/affiliates/{id}/statistics` | Core | [Get Affiliate Statistics](/restapi/operations/affiliates/get-affiliate-statistics) | `AffiliateController@statistics` |
+| `GET` | `/affiliates/{id}/crm-contact` | Core | [Get Affiliate CRM Contact](/restapi/operations/affiliates/get-affiliate-crm-contact) | `AffiliateController@getCrmContact` |
+| `GET` | `/affiliates/{id}/crm-options` | Core | [Get Affiliate CRM Options](/restapi/operations/affiliates/get-affiliate-crm-options) | `AffiliateController@getCrmOptions` |
+| `POST` | `/affiliates/{id}/crm-contact/tags` | Core | [Update Affiliate CRM Tags](/restapi/operations/affiliates/update-affiliate-crm-tags) | `AffiliateController@updateCrmTags` |
+| `POST` | `/affiliates/{id}/crm-contact/lists` | Core | [Update Affiliate CRM Lists](/restapi/operations/affiliates/update-affiliate-crm-lists) | `AffiliateController@updateCrmLists` |
 | `GET` | `/affiliates/{id}/customers/search` | <span class="pro-badge">PRO</span> | [Search Affiliate Customers](/restapi/operations/affiliates/search-affiliate-customers) | `LifetimeCommissionController@searchCustomers` |
 | `POST` | `/affiliates/{id}/customers/link` | <span class="pro-badge">PRO</span> | [Link Affiliate Customer](/restapi/operations/affiliates/link-affiliate-customer) | `LifetimeCommissionController@link` |
 | `DELETE` | `/affiliates/{id}/customers/{customerId}` | <span class="pro-badge">PRO</span> | [Unlink Affiliate Customer](/restapi/operations/affiliates/unlink-affiliate-customer) | `LifetimeCommissionController@unlink` |

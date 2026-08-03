@@ -1,11 +1,11 @@
 ---
 title: Settings API
-description: Email configuration, feature settings, integrations, referral config, page management, migrations, and registration fields.
+description: Email configuration, feature settings, integrations, referral config, page management, migrations, registration fields, captcha, and affiliate managers.
 ---
 
 # Settings API
 
-Email configuration, feature settings, integrations, referral config, page management, migrations, and registration fields.
+Email configuration, feature settings, integrations, referral config, page management, migrations, registration fields, captcha, and affiliate managers.
 
 ## Authentication
 
@@ -18,7 +18,6 @@ All settings routes are protected by `AdminPolicy` and require WordPress adminis
 | `GET` | `/settings/email-config` | Core | [Get Email Config](/restapi/operations/settings/get-email-config) | `SettingController@getEmailConfig` |
 | `POST` | `/settings/email-config` | Core | [Update Email Config](/restapi/operations/settings/update-email-config) | `SettingController@updateEmailConfig` |
 | `GET` | `/settings/email-config/emails` | Core | [List Email Templates](/restapi/operations/settings/list-email-templates) | `SettingController@getNotificationEmails` |
-| `POST` | `/settings/email-config/emails` | Core | [Update Email Templates](/restapi/operations/settings/update-email-templates) | `SettingController@updateNotificationEmails` |
 | `PATCH` | `/settings/email-config/emails` | Core | [Update Email Template](/restapi/operations/settings/update-email-template) | `SettingController@patchSingleNotificationEmail` |
 | `GET` | `/settings/features` | Core | [List Features](/restapi/operations/settings/list-features) | `SettingController@getFeatures` |
 | `GET` | `/settings/features/{feature_key}` | Core | [Get Feature Settings](/restapi/operations/settings/get-feature-settings) | `SettingController@getFeatureSettings` |
@@ -43,6 +42,9 @@ All settings routes are protected by `AdminPolicy` and require WordPress adminis
 | `GET` | `/settings/registration-fields` | Core | [Get Registration Fields](/restapi/operations/settings/get-registration-fields) | `SettingController@getRegistrationFields` |
 | `GET` | `/settings/options/affiliate-groups` | <span class="pro-badge">PRO</span> | [Get Affiliate Group Options](/restapi/operations/settings/get-affiliate-group-options) | `ProSettingController@getAffiliateGroupsOptions` |
 | `POST` | `/settings/registration-fields` | <span class="pro-badge">PRO</span> | [Update Registration Fields](/restapi/operations/settings/update-registration-fields) | `ProSettingController@saveRegistrationFields` |
+| `GET` | `/settings/captcha` | <span class="pro-badge">PRO</span> | [Get Captcha Settings](/restapi/operations/settings/get-captcha-settings) | `ProSettingController@getCaptchaSettings` |
+| `POST` | `/settings/captcha` | <span class="pro-badge">PRO</span> | [Update Captcha Settings](/restapi/operations/settings/update-captcha-settings) | `ProSettingController@saveCaptchaSettings` |
+| `POST` | `/settings/captcha/validate` | <span class="pro-badge">PRO</span> | [Validate Captcha Keys](/restapi/operations/settings/validate-captcha-keys) | `ProSettingController@validateCaptchaKeys` |
 | `GET` | `/settings/managers` | <span class="pro-badge">PRO</span> | [List Managers](/restapi/operations/settings/list-managers) | `ProSettingController@getManagers` |
 | `POST` | `/settings/managers` | <span class="pro-badge">PRO</span> | [Update Managers](/restapi/operations/settings/update-managers) | `ProSettingController@updateManager` |
 | `DELETE` | `/settings/managers/{id}` | <span class="pro-badge">PRO</span> | [Delete Manager](/restapi/operations/settings/delete-manager) | `ProSettingController@deleteManager` |

@@ -1,7 +1,5 @@
 {
   "reports": [
-    "list-advanced-providers",
-    "get-commerce-report",
     "get-dashboard-stats",
     "get-dashboard-chart-stats"
   ],
@@ -19,6 +17,10 @@
     "list-affiliate-customers",
     "get-affiliate-stats",
     "get-affiliate-statistics",
+    "get-affiliate-crm-contact",
+    "get-affiliate-crm-options",
+    "update-affiliate-crm-tags",
+    "update-affiliate-crm-lists",
     "search-affiliate-customers",
     "link-affiliate-customer",
     "unlink-affiliate-customer"
@@ -52,7 +54,6 @@
     "get-email-config",
     "update-email-config",
     "list-email-templates",
-    "update-email-templates",
     "update-email-template",
     "list-features",
     "get-feature-settings",
@@ -77,6 +78,9 @@
     "get-registration-fields",
     "get-affiliate-group-options",
     "update-registration-fields",
+    "get-captcha-settings",
+    "update-captcha-settings",
+    "validate-captcha-keys",
     "list-managers",
     "update-managers",
     "delete-manager"

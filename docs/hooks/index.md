@@ -5,7 +5,7 @@ description: Overview of all FluentAffiliate WordPress action and filter hooks.
 
 # Hooks Overview
 
-FluentAffiliate registers **31 action hooks** and **82 filter hooks** (including dynamic variants).
+FluentAffiliate registers **35 action hooks** and **95 filter hooks** (including dynamic variants).
 
 ## Action Hooks
 
@@ -18,6 +18,7 @@ FluentAffiliate registers **31 action hooks** and **82 filter hooks** (including
 | [Integrations](/hooks/actions/integrations) | Third-party integration and migration events |
 | [Groups](/hooks/actions/groups) | Affiliate group lifecycle events <span class="pro-badge">PRO</span> |
 | [Creatives](/hooks/actions/creatives) | Creative asset lifecycle events <span class="pro-badge">PRO</span> |
+| [Miscellaneous](/hooks/actions/misc) | Hooks that do not fit the categories above |
 
 ## Filter Hooks
 

@@ -5,7 +5,7 @@ description: All FluentAffiliate WordPress filter hooks, organized by category.
 
 # Filter Hooks
 
-FluentAffiliate exposes **82 filter hooks** (including dynamic variants). Use `add_filter()` to modify data or behaviour.
+FluentAffiliate exposes **95 filter hooks** (including dynamic variants). Use `add_filter()` to modify data or behaviour.
 
 | Category | Description |
 |----------|-------------|

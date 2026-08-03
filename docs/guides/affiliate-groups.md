@@ -95,15 +95,9 @@ add_action('fluent_affiliate/before_create_affiliate_group', function($data) {
 });
 ```
 
-### `fluent_affiliate/after_create_affiliate_group`
-
-Fires after a group is successfully created.
-
-```php
-add_action('fluent_affiliate/after_create_affiliate_group', function($group) {
-    my_crm_sync_group($group->id, $group->meta_key);
-});
-```
+::: tip No after-create action
+There is no `after_create_affiliate_group` hook. To react to a new group, filter its payload with [`fluent_affiliate/create_affiliate_group_data_value`](#fluent-affiliate-create-affiliate-group-data-value) or use the group returned by the create endpoint.
+:::
 
 ### `fluent_affiliate/before_delete_affiliate_group`
 
@@ -121,9 +115,11 @@ add_action('fluent_affiliate/before_delete_affiliate_group', function($group) {
 
 Fires after a group is deleted.
 
+Receives the deleted `AffiliateGroup` model (the row is already gone, the object is still populated).
+
 ```php
-add_action('fluent_affiliate/after_delete_affiliate_group', function($groupId) {
-    delete_option('my_plugin_group_' . $groupId . '_cache');
+add_action('fluent_affiliate/after_delete_affiliate_group', function($group) {
+    delete_option('my_plugin_group_' . $group->id . '_cache');
 });
 ```
 
@@ -145,8 +141,11 @@ add_filter('fluent_affiliate/create_affiliate_group_data_value', function($value
 
 Modify the serialised value before a group is updated.
 
+Callback signature is `($value, $groupData, $group)` — the submitted request data comes before the model.
+
 ```php
-add_filter('fluent_affiliate/update_affiliate_group_data_value', function($value, $group, $data) {
+add_filter('fluent_affiliate/update_affiliate_group_data_value', function($value, $groupData, $group) {
+    $value['custom_tier'] = sanitize_text_field($groupData['custom_tier'] ?? 'standard');
     return $value;
 }, 10, 3);
 ```

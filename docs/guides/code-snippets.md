@@ -158,27 +158,49 @@ add_filter('fluent_affiliate/has_all_affiliate_access', function ($hasAccess) {
 });
 ```
 
-## Exclude a Product Category from Referrals
+## Skip a Referral Before It Is Recorded
 
-Prevent referrals from being created for orders containing items in a specific category.
+`recordReferral()` runs every incoming referral payload through `fluent_affiliate/referral_data`, then drops zero-amount sales unless `fluent_affiliate/ignore_zero_amount_referral` says otherwise. Zeroing the amount is the supported way to suppress a referral for orders you don't want to commission.
 
 ```php
-add_filter('fluent_affiliate/should_process_referral', function ($shouldProcess, $context) {
-    // $context contains 'order', 'affiliate', 'provider' etc.
-    if (isset($context['product_category']) && $context['product_category'] === 'gift-cards') {
-        return false;
+add_filter('fluent_affiliate/referral_data', function ($data, $provider) {
+    if ($provider !== 'woo') {
+        return $data;
     }
-    return $shouldProcess;
+
+    $order = wc_get_order($data['provider_id'] ?? 0);
+    if (!$order) {
+        return $data;
+    }
+
+    foreach ($order->get_items() as $item) {
+        if (has_term('gift-cards', 'product_cat', $item->get_product_id())) {
+            $data['amount'] = 0; // dropped by the zero-amount guard
+            break;
+        }
+    }
+
+    return $data;
 }, 10, 2);
 ```
 
-## Modify the Referral Cookie Duration
+## Change the Referral Cookie Duration Default
 
-Override the cookie lifetime (in days) without changing plugin settings.
+Cookie lifetime comes from the `cookie_duration` referral setting (days, default 30). Filter the defaults to change what an unconfigured site uses:
 
 ```php
-add_filter('fluent_affiliate/cookie_expiration_days', function ($days) {
-    return 60; // 60-day cookie
+add_filter('fluent_affiliate/default_referral_settings', function ($settings) {
+    $settings['cookie_duration'] = 60;
+    return $settings;
+});
+```
+
+The public tracker script reads the same value as `duration_days`, which you can override independently:
+
+```php
+add_filter('fluent_affiliate_tracker_vars', function ($vars) {
+    $vars['duration_days'] = 60;
+    return $vars;
 });
 ```
 

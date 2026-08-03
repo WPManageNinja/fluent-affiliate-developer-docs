@@ -9,9 +9,22 @@ description: Action hooks in the Portal category.
 
 | Hook | Description |
 |------|-------------|
+| [`fluent_affiliate/auth/register_form_after_fields`](#fluent-affiliate-auth-register-form-after-fields) | Fired inside the affiliate registration form, after all fields and before the submit button. |
 | [`fluent_affiliate/render_login_form`](#fluent-affiliate-render-login-form) | Fired inside the portal login form template. |
 | [`fluent_affiliate/render_signup_form`](#fluent-affiliate-render-signup-form) | Fired inside the portal sign-up form template. |
 | [`fluent_affiliate/email_head`](#fluent-affiliate-email-head) | Fired inside the `<head>` section of the FluentAffiliate email template. |
+
+## `fluent_affiliate/auth/register_form_after_fields`
+
+Fired inside the affiliate registration form, after all fields and before the submit button. Pro renders the captcha widget here; use it to print extra markup such as consent notices.
+
+**Source:** `app/Modules/Auth/AuthHandler.php`
+
+```php
+add_action('fluent_affiliate/auth/register_form_after_fields', function() {
+    echo '<p class="fa-terms">By joining you agree to our partner terms.</p>';
+});
+```
 
 ## `fluent_affiliate/render_login_form`
 

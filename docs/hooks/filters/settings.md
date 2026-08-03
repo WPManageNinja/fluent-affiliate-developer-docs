@@ -16,7 +16,10 @@ description: Filter hooks in the Settings category.
 | [`fluent_affiliate/admin_url`](#fluent-affiliate-admin-url) | Filters the FluentAffiliate admin URL. |
 | [`fluent_affiliate/registered_features`](#fluent-affiliate-registered-features) | Filters the list of feature modules registered with FluentAffiliate. |
 | [`fluent_affiliate/max_execution_time`](#fluent-affiliate-max-execution-time) | Filters the maximum execution time (seconds) for long-running background jobs. |
+| [`fluent_affiliate/pro_upgrade_base_url`](#fluent-affiliate-pro-upgrade-base-url) | Filters the base URL used for "Upgrade to Pro" links before UTM parameters are appended. |
 | [`fluent_affiliate/is_rtl`](#fluent-affiliate-is-rtl) | Filters whether RTL (right-to-left) mode is active for the affiliate portal. |
+| [`fluent_affiliate_base_url`](#fluent-affiliate-base-url) | Filters the base admin URL the admin SPA builds its links from (`admin. |
+| [`fluent_affiliate/admin_menu_title`](#fluent-affiliate-admin-menu-title) | Filters the FluentAffiliate top-level WordPress admin menu title. |
 | [`fluent_affiliate/top_menu_items`](#fluent-affiliate-top-menu-items) | Filters the top navigation items in the FluentAffiliate admin. |
 | [`fluent_affiliate/right_menu_items`](#fluent-affiliate-right-menu-items) | Filters the right-side navigation items in the admin header. |
 | [`fluent_affiliate/admin_vars`](#fluent-affiliate-admin-vars) | Filters the JavaScript variables object passed to the admin SPA. |
@@ -27,8 +30,10 @@ description: Filter hooks in the Settings category.
 | [`fluent_affiliate/get_referral_config`](#fluent-affiliate-get-referral-config) | Filters the referral program configuration before it is returned to the admin. |
 | [`fluent_affiliate/update_referral_config`](#fluent-affiliate-update-referral-config) | Filters the referral configuration before it is saved. |
 | [`fluent_affiliate/get_feature_settings_{featureKey}`](#fluent-affiliate-get-feature-settings-featurekey) | Filters the settings returned for a specific feature. |
-| [`fluent_affiliate/update_feature_settings_{featureKey}`](#fluent-affiliate-update-feature-settings-featurekey) | See source. |
+| [`fluent_affiliate/update_feature_settings_{featureKey}`](#fluent-affiliate-update-feature-settings-featurekey) | Filters (and may validate) a feature module's settings payload before it is saved. |
 | [`fluent_affiliate/update_feature_response_{featureKey}`](#fluent-affiliate-update-feature-response-featurekey) | Filters the response after a feature's settings are updated. |
+| [`fluent_affiliate_tracker_vars`](#fluent-affiliate-tracker-vars) | Filters the JS variables localized for the public visit tracker script — cookie duration, referral query parameter, extra tracked query params, last-referrer credit, and the AJAX endpoint. |
+| [`fluent_affiliate/currencies`](#fluent-affiliate-currencies) | Filters the full currency catalogue loaded from `config/currency. |
 | [`fluent_affiliate/social_media_links`](#fluent-affiliate-social-media-links) | Filters the array of social media platform definitions shown in the affiliate portal share widget. |
 | [`fluent_affiliate/social_media_share_default_enabled_keys`](#fluent-affiliate-social-media-share-default-enabled-keys) | Filters the list of social platform keys that are enabled by default (when no custom configuration has been saved). |
 
@@ -163,6 +168,24 @@ add_filter('fluent_affiliate/max_execution_time', function($seconds) {
 });
 ```
 
+## `fluent_affiliate/pro_upgrade_base_url`
+
+Filters the base URL used for "Upgrade to Pro" links before UTM parameters are appended. Useful for white-labelling or pointing upgrade prompts at your own reseller page.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$baseUrl` | `string` | Default `https://fluentaffiliate.com/pricing/`. |
+
+**Source:** `app/Helper/Utility.php`
+
+```php
+add_filter('fluent_affiliate/pro_upgrade_base_url', function($baseUrl) {
+    return 'https://my-agency.test/affiliate-pro/';
+});
+```
+
 ## `fluent_affiliate/is_rtl`
 
 Filters whether RTL (right-to-left) mode is active for the affiliate portal.
@@ -177,6 +200,42 @@ Filters whether RTL (right-to-left) mode is active for the affiliate portal.
 
 ```php
 add_filter('fluent_affiliate/is_rtl', '__return_false');
+```
+
+## `fluent_affiliate_base_url`
+
+Filters the base admin URL the admin SPA builds its links from (`admin.php?page=fluent-affiliate#`). Useful when the admin app is mounted somewhere else.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$baseUrl` | `string` | Admin base URL including the trailing `#`. |
+
+**Source:** `app/Hooks/Handlers/AdminMenuHandler.php`
+
+```php
+add_filter('fluent_affiliate_base_url', function($baseUrl) {
+    return $baseUrl;
+});
+```
+
+## `fluent_affiliate/admin_menu_title`
+
+Filters the FluentAffiliate top-level WordPress admin menu title.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$title` | `string` | Menu title. Default `FluentAffiliate`. |
+
+**Source:** `app/Hooks/Handlers/AdminMenuHandler.php`
+
+```php
+add_filter('fluent_affiliate/admin_menu_title', function($title) {
+    return 'Partners';
+});
 ```
 
 ## `fluent_affiliate/top_menu_items`
@@ -371,9 +430,23 @@ add_filter('fluent_affiliate/get_feature_settings_my_feature', function($respons
 
 ## `fluent_affiliate/update_feature_settings_{featureKey}`
 
-Dynamic hook — the suffix is determined at runtime. See source for exact usage.
+Filters (and may validate) a feature module's settings payload before it is saved. The `{featureKey}` segment is the feature slug (e.g. `affiliate_qr_code`, `social_media_share`). Return a `WP_Error` to reject the save.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$settings` | `array` | Submitted settings for this feature. |
+| `$request` | `Request` | The current request object. |
 
 **Source:** `app/Http/Controllers/SettingController.php`
+
+```php
+add_filter('fluent_affiliate/update_feature_settings_affiliate_qr_code', function($settings, $request) {
+    $settings['size'] = min((int) ($settings['size'] ?? 200), 512);
+    return $settings;
+}, 10, 2);
+```
 
 ## `fluent_affiliate/update_feature_response_{featureKey}`
 
@@ -392,6 +465,46 @@ Filters the response after a feature's settings are updated.
 add_filter('fluent_affiliate/update_feature_response_my_feature', function($response, $saved) {
     return $response;
 }, 10, 2);
+```
+
+## `fluent_affiliate_tracker_vars`
+
+Filters the JS variables localized for the public visit tracker script — cookie duration, referral query parameter, extra tracked query params, last-referrer credit, and the AJAX endpoint.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$vars` | `array` | Tracker vars: `duration_days`, `aff_param`, `other_params`, `credit_last`, `request_url`. |
+
+**Source:** `app/Modules/Tracker/Track.php`
+
+```php
+add_filter('fluent_affiliate_tracker_vars', function($vars) {
+    $vars['other_params'][] = 'gclid'; // also persist Google click ids
+    return $vars;
+});
+```
+
+## `fluent_affiliate/currencies`
+
+Filters the full currency catalogue loaded from `config/currency.php` — the `names` map (currency code => label) and the `symbols` map (currency code => symbol). Use it to add a currency the plugin does not ship with, or to relabel an existing one.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$currencies` | `array` | Array with `names` and `symbols` keys, both keyed by uppercase currency code. |
+
+**Source:** `config/currency.php`
+
+```php
+add_filter('fluent_affiliate/currencies', function($currencies) {
+    $currencies['names']['XYZ']   = 'Example Coin';
+    $currencies['symbols']['XYZ'] = 'X';
+
+    return $currencies;
+});
 ```
 
 ## `fluent_affiliate/social_media_links`

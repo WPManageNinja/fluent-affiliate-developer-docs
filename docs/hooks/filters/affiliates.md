@@ -11,10 +11,11 @@ description: Filter hooks in the Affiliates category.
 |------|-------------|
 | [`fluent_affiliate/affiliate_by_param`](#fluent-affiliate-affiliate-by-param) | Filters the resolved Affiliate model when looking up an affiliate from a URL parameter. |
 | [`fluent_affiliate/affiliate_widgets`](#fluent-affiliate-affiliate-widgets) | Filters the widgets displayed on the affiliate single-view page. |
+| [`fluent_affiliate/affiliate_view_data`](#fluent-affiliate-affiliate-view-data) | Filters the affiliate model returned by the single-affiliate admin endpoint (`GET /affiliates/{id}`), after attached coupons and the share URL have been set. |
 | [`fluent_affiliate/affiliate_customers_query`](#fluent-affiliate-affiliate-customers-query) | Filters the customer query for an affiliate before pagination. |
 | [`fluent_affiliate/affiliate_customers_response`](#fluent-affiliate-affiliate-customers-response) | Filters the customers response payload for an affiliate. |
 | [`fluent_affiliate/affiliate_attached_coupons`](#fluent-affiliate-affiliate-attached-coupons) | Filters the coupons attached to an affiliate. |
-| [`fluent_affiliate/affiliate_avatar`](#fluent-affiliate-affiliate-avatar) | See source. |
+| [`fluent_affiliate/affiliate_avatar`](#fluent-affiliate-affiliate-avatar) | Filters the avatar URL used for an affiliate or customer record. |
 | [`fluent_affiliate/checkout_affiliate`](#fluent-affiliate-checkout-affiliate) | Filters the affiliate resolved at checkout for an order. |
 
 ## `fluent_affiliate/affiliate_by_param`
@@ -58,6 +59,25 @@ add_filter('fluent_affiliate/affiliate_widgets', function($widgets, $affiliate) 
     $widgets[] = ['type' => 'custom_metric', 'title' => 'Custom KPI', 'value' => 42];
     return $widgets;
 }, 10, 2);
+```
+
+## `fluent_affiliate/affiliate_view_data`
+
+Filters the affiliate model returned by the single-affiliate admin endpoint (`GET /affiliates/{id}`), after attached coupons and the share URL have been set. Pro uses this to append custom registration field values.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$affiliate` | `Affiliate` | The Affiliate model being returned to the admin SPA. |
+
+**Source:** `app/Http/Controllers/AffiliateController.php`
+
+```php
+add_filter('fluent_affiliate/affiliate_view_data', function($affiliate) {
+    $affiliate->my_extra_data = get_user_meta($affiliate->user_id, 'my_field', true);
+    return $affiliate;
+});
 ```
 
 ## `fluent_affiliate/affiliate_customers_query`
@@ -124,7 +144,24 @@ add_filter('fluent_affiliate/affiliate_attached_coupons', function($coupons, $af
 
 ## `fluent_affiliate/affiliate_avatar`
 
+Filters the avatar URL used for an affiliate or customer record. Defaults to a Gravatar URL built from the email hash — return your own URL to use a different avatar source.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$url` | `string` | The default Gravatar URL (128px). |
+| `$email` | `string` | Email address the avatar is resolved for. |
+
 **Source:** `app/Models/Customer.php`
+
+```php
+add_filter('fluent_affiliate/affiliate_avatar', function($url, $email) {
+    $userId = email_exists($email);
+    $custom = $userId ? get_user_meta($userId, 'my_avatar_url', true) : '';
+    return $custom ?: $url;
+}, 10, 2);
+```
 
 ## `fluent_affiliate/checkout_affiliate`
 

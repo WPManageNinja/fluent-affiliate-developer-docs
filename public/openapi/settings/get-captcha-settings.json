@@ -23,30 +23,20 @@
     }
   ],
   "paths": {
-    "/reports/commerce-reports/{provider}": {
+    "/settings/captcha": {
       "get": {
-        "operationId": "getCommerceReport",
-        "summary": "GET Get Commerce Report",
-        "description": "Get reports for a specific commerce provider.\n\nController: `ReportsController@getReports`\nRoute source: `app/Http/Routes/api.php`",
+        "operationId": "getCaptchaSettings",
+        "summary": "GET Get Captcha Settings",
+        "description": "Get the captcha (Google reCAPTCHA) settings, the available provider list, and whether the active provider's keys have been validated. Secret keys are returned masked.\n\nController: `ProSettingController@getCaptchaSettings`\nRoute source: `fluent-affiliate-pro/app/Http/Routes/api.php`",
         "tags": [
-          "Reports"
+          "Settings"
         ],
         "security": [
           {
             "ApplicationPasswords": []
           }
         ],
-        "parameters": [
-          {
-            "name": "provider",
-            "in": "path",
-            "required": true,
-            "description": "The provider.",
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Successful response",
@@ -55,31 +45,44 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "report": {
+                    "settings": {
                       "type": "object",
+                      "description": "Captcha settings. Secret keys are returned masked.",
                       "properties": {
                         "enabled": {
-                          "type": "boolean"
+                          "type": "string",
+                          "enum": [
+                            "yes",
+                            "no"
+                          ]
                         },
-                        "title": {
-                          "type": "string"
+                        "active_provider": {
+                          "type": "string",
+                          "description": "Provider key, e.g. `recaptcha`."
                         },
-                        "widgets": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "label": {
-                                "type": "string"
-                              },
-                              "value": {},
-                              "is_money": {
-                                "type": "boolean"
-                              }
-                            }
+                        "providers": {
+                          "type": "object",
+                          "description": "Per-provider settings keyed by provider key. For `recaptcha`: `version` (`v2_visible` | `v3_invisible`), `v2_site_key`, `v2_secret_key`, `v3_site_key`, `v3_secret_key`, `v3_score_threshold`, `error_message`."
+                        }
+                      }
+                    },
+                    "providers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
                           }
                         }
                       }
+                    },
+                    "validated": {
+                      "type": "boolean",
+                      "description": "Whether the active provider's stored keys have passed validation."
                     }
                   }
                 }

@@ -29,6 +29,7 @@ Represents a registered affiliate. Central model in FluentAffiliate.
 | `payment_email` | `VARCHAR(192)` | YES | — | Email address used for payout delivery. |
 | `status` | `VARCHAR(100)` | YES | `active` | Record status. |
 | `settings` | `LONGTEXT` | YES | — | Serialized JSON settings blob. |
+| `custom_fields` | `JSON` | YES | — | JSON map of custom registration field values, keyed by field key (Pro feature — added by the DB-version migration). |
 | `note` | `LONGTEXT` | YES | — | Internal admin notes about the affiliate. |
 | `created_at` | `TIMESTAMP` | YES | — | Timestamp when the record was created. |
 | `updated_at` | `TIMESTAMP` | YES | — | Timestamp when the record was last updated. |

@@ -123,7 +123,7 @@ add_filter('fluent_affiliate/affiliate_attached_coupons', function($coupons, $af
 
 ## Self-Referral Prevention
 
-The integration calls `BaseConnector::isSelfReferral()` before recording a referral. If the purchasing customer is the same WordPress user as the affiliate, the referral is skipped.
+The integration calls `BaseConnector::isSelfReferred()` before recording a referral. The referral is skipped when the buyer is the affiliate's own WordPress user, or when the order email matches the affiliate's payment email or account email. Set the `self_referral_disabled` referral setting to `no` to allow self-referrals.
 
 ## Provider Reference URL
 

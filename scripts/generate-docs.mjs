@@ -98,6 +98,7 @@ const COLUMN_DESC = {
   lead_counts:   'Total lead count (denormalised).',
   rate_type:     'Commission type — `percentage` or `flat`.',
   custom_param:  'Custom URL parameter value used for tracking.',
+  custom_fields: 'JSON map of custom registration field values, keyed by field key (Pro feature — added by the DB-version migration).',
   payment_email: 'Email address used for payout delivery.',
   note:          'Internal admin notes about the affiliate.',
 
@@ -231,27 +232,31 @@ function extractHooks(sourceDirs) {
       const rel     = relative(coreRoot, file)
 
       // Static action hooks (not followed by string concatenation ` . $`)
-      for (const [, hook] of content.matchAll(/do_action\s*\(\s*'(fluent_affiliate\/[^']+)'(?!\s*\.)/g)) {
+      for (const [, hook] of content.matchAll(/(?:do_action|->doAction)\s*\(\s*'(fluent_affiliate[/_][^']+)'(?!\s*\.)/g)) {
         if (!actions[hook]) actions[hook] = { files: [], isPro, isDynamic: false }
         if (!actions[hook].files.includes(rel)) actions[hook].files.push(rel)
       }
 
-      // Dynamic action hooks  e.g.  'fluent_affiliate/foo_' . $var
-      for (const [, base, varName] of content.matchAll(/do_action\s*\(\s*'(fluent_affiliate\/[^']+)'\s*\.\s*\$(\w+)/g)) {
-        const hook = base + `{${varName}}`
+      // Dynamic action hooks  e.g.  'fluent_affiliate/foo_' . $var  or  'fluent_affiliate_foo_' . $var . '_bar'
+      for (const [, base, varName, tail] of content.matchAll(
+        /(?:do_action|->doAction)\s*\(\s*'(fluent_affiliate[/_][^']+)'\s*\.\s*\$(\w+)(?:(?:->\w+|\[[^\]]*\])*\s*\.\s*'([^']+)')?/g,
+      )) {
+        const hook = base + `{${varName}}` + (tail ?? '')
         if (!actions[hook]) actions[hook] = { files: [], isPro, isDynamic: true }
         if (!actions[hook].files.includes(rel)) actions[hook].files.push(rel)
       }
 
       // Static filter hooks (not followed by string concatenation ` . $`)
-      for (const [, hook] of content.matchAll(/apply_filters\s*\(\s*'(fluent_affiliate\/[^']+)'(?!\s*\.)/g)) {
+      for (const [, hook] of content.matchAll(/(?:apply_filters|->applyFilters)\s*\(\s*'(fluent_affiliate[/_][^']+)'(?!\s*\.)/g)) {
         if (!filters[hook]) filters[hook] = { files: [], isPro, isDynamic: false }
         if (!filters[hook].files.includes(rel)) filters[hook].files.push(rel)
       }
 
-      // Dynamic filter hooks  e.g.  'fluent_affiliate/foo_' . $var
-      for (const [, base, varName] of content.matchAll(/apply_filters\s*\(\s*'(fluent_affiliate\/[^']+)'\s*\.\s*\$(\w+)/g)) {
-        const hook = base + `{${varName}}`
+      // Dynamic filter hooks  e.g.  'fluent_affiliate/foo_' . $var  or  'fluent_affiliate_foo_' . $var . '_bar'
+      for (const [, base, varName, tail] of content.matchAll(
+        /(?:apply_filters|->applyFilters)\s*\(\s*'(fluent_affiliate[/_][^']+)'\s*\.\s*\$(\w+)(?:(?:->\w+|\[[^\]]*\])*\s*\.\s*'([^']+)')?/g,
+      )) {
+        const hook = base + `{${varName}}` + (tail ?? '')
         if (!filters[hook]) filters[hook] = { files: [], isPro, isDynamic: true }
         if (!filters[hook].files.includes(rel)) filters[hook].files.push(rel)
       }
@@ -280,7 +285,7 @@ const FILTER_CATEGORIES = {
   referrals:    h => /\/referral|\/data_export_limit|\/provider_reference|\/commission|\/ignore_zero|\/formatted_order/.test(h),
   permissions:  h => /has_all_|user_has_affiliate_access/.test(h),
   portal:       h => /\/portal|\/default_share_url|\/will_load_tracker|\/smartcode/.test(h),
-  settings:     h => /\/get_email_config|\/update_email_config|\/get_referral_config|\/update_referral_config|\/get_feature|\/update_feature|\/settings_menu|\/top_menu|\/right_menu|\/admin_vars|\/dashboard_notices|\/admin_url|\/portal_page_url|\/registered_features|\/max_execution|\/is_rtl|\/suggested_colors|\/payout_form_schema|\/referral_formats|\/portal_menu_items|\/get_currencies|\/currency_symbols|\/referral_config_field_types|\/default_referral_settings/.test(h),
+  settings:     h => /\/get_email_config|\/update_email_config|\/get_referral_config|\/update_referral_config|\/get_feature|\/update_feature|\/settings_menu|\/top_menu|\/right_menu|\/admin_vars|\/dashboard_notices|\/admin_url|\/portal_page_url|\/registered_features|\/max_execution|\/is_rtl|\/suggested_colors|\/payout_form_schema|\/referral_formats|\/portal_menu_items|\/currencies|\/get_currencies|\/currency_symbols|\/referral_config_field_types|\/default_referral_settings/.test(h),
   auth:         h => /\/auth\/|\/terms_policy|\/reserved_usernames/.test(h),
   integrations: h => /\/get_integrations|\/get_integration_config|\/save_integration_config|\/user_ip|\/migrators|\/get_migration|\/get_current_data|\/wppayform|\/advanced_report/.test(h),
   creatives:    h => false,
@@ -288,6 +293,48 @@ const FILTER_CATEGORIES = {
 
 const HOOK_DOCS = {
   // --- Actions ---
+  'fluent_affiliate/loaded': {
+    desc: 'Fired on `plugins_loaded` once the FluentAffiliate application container is built. This is the canonical attach point for add-ons — the Pro plugin boots its own application from here.',
+    params: [
+      { name: '$app', type: 'Application', desc: 'The FluentAffiliate application (service container) instance.' },
+    ],
+    example: `add_action('fluent_affiliate/loaded', function($app) {
+    // Register your own routes, models or handlers against the container.
+    $app->addAction('fluent_affiliate/affiliate_created', function($affiliate) {
+        // ...
+    });
+});`,
+  },
+  'fluent_affiliate/on_wp_init': {
+    desc: 'Fired on WordPress `init` after FluentAffiliate has loaded. Use it for work that needs the full WordPress environment (post types, rewrite rules, translations) rather than just the plugin container.',
+    params: [
+      { name: '$app', type: 'Application', desc: 'The FluentAffiliate application instance.' },
+    ],
+    example: `add_action('fluent_affiliate/on_wp_init', function($app) {
+    // Safe to call WordPress APIs that are only ready on init.
+});`,
+  },
+  'fluent_affiliate/pro_loaded': {
+    desc: 'Fired after the FluentAffiliate Pro application has booted against the free plugin. Use this instead of `fluent_affiliate/loaded` when your code depends on Pro services, models or routes.',
+    params: [
+      { name: '$app', type: 'Application', desc: 'The FluentAffiliate application instance shared by both plugins.' },
+    ],
+    example: `add_action('fluent_affiliate/pro_loaded', function($app) {
+    // Pro classes (Creative, AffiliateGroup, …) are available here.
+});`,
+  },
+  'fluent_affiliate/currencies': {
+    desc: 'Filters the full currency catalogue loaded from `config/currency.php` — the `names` map (currency code => label) and the `symbols` map (currency code => symbol). Use it to add a currency the plugin does not ship with, or to relabel an existing one.',
+    params: [
+      { name: '$currencies', type: 'array', desc: 'Array with `names` and `symbols` keys, both keyed by uppercase currency code.' },
+    ],
+    example: `add_filter('fluent_affiliate/currencies', function($currencies) {
+    $currencies['names']['XYZ']   = 'Example Coin';
+    $currencies['symbols']['XYZ'] = 'X';
+
+    return $currencies;
+});`,
+  },
   'fluent_affiliate/affiliate_created': {
     desc: 'Fired after a new affiliate record is created.',
     params: [
@@ -417,6 +464,16 @@ add_action('fluent_affiliate/affiliate_status_to_active', function($affiliate, $
     }
 }, 10, 2);`,
   },
+  'fluent_affiliate/payout/stranded_referrals_released': {
+    desc: 'Fired by the hourly scheduled job after referrals stuck in `processing` (claimed by a payout run that never completed) are released back to `unpaid` and the affected affiliates\' earnings are recounted.',
+    params: [
+      { name: '$affiliateIds', type: 'array', desc: 'IDs of the affiliates whose referrals were released.' },
+      { name: '$released',     type: 'int',   desc: 'Number of referral rows reset to `unpaid`.' },
+    ],
+    example: `add_action('fluent_affiliate/payout/stranded_referrals_released', function($affiliateIds, $released) {
+    error_log("Released {$released} stranded referrals for " . count($affiliateIds) . ' affiliates');
+}, 10, 2);`,
+  },
   'fluent_affiliate/payout/transaction/transaction_updated_to_{status}': {
     desc: 'Fired when a payout transaction status changes. The hook suffix is the new `status` (e.g. `paid`, `failed`, `pending`).',
     params: [
@@ -459,6 +516,13 @@ add_action('fluent_affiliate/affiliate_status_to_active', function($affiliate, $
     params: [],
     example: `add_action('fluent_affiliate/render_signup_form', function() {
     echo '<div class="custom-signup-notice">Join today!</div>';
+});`,
+  },
+  'fluent_affiliate/auth/register_form_after_fields': {
+    desc: 'Fired inside the affiliate registration form, after all fields and before the submit button. Pro renders the captcha widget here; use it to print extra markup such as consent notices.',
+    params: [],
+    example: `add_action('fluent_affiliate/auth/register_form_after_fields', function() {
+    echo '<p class="fa-terms">By joining you agree to our partner terms.</p>';
 });`,
   },
   'fluent_affiliate/admin_app_rendering': {
@@ -691,20 +755,6 @@ add_action('fluent_affiliate/affiliate_status_to_active', function($affiliate, $
     example: `add_filter('fluent_affiliate/parse_smart_codes', function($text, $data, $type) {
     return str_replace('{{custom.tag}}', 'value', $text);
 }, 20, 3);`,
-  },
-  'fluent_affiliate/payout/before_processing': {
-    desc: 'Filters the payout before it is processed. Return a `WP_Error` to halt processing.',
-    params: [
-      { name: '$payout',     type: 'Payout', desc: 'The Payout model.' },
-      { name: '$affiliates', type: 'array',  desc: 'Affiliates included in the payout.' },
-      { name: '$dataConfig', type: 'array',  desc: 'Payout configuration.' },
-    ],
-    example: `add_filter('fluent_affiliate/payout/before_processing', function($payout, $affiliates, $dataConfig) {
-    if (empty($dataConfig['method'])) {
-        return new WP_Error('missing_method', 'Payout method is required.');
-    }
-    return $payout;
-}, 10, 3);`,
   },
   'fluent_affiliate/portal/pending_message': {
     desc: 'Filters the HTML shown to an affiliate whose account is pending approval.',
@@ -1544,6 +1594,175 @@ add_filter('fluent_affiliate/get_product_cat_options_woo', function($options) {
 });`,
   },
 
+  'fluent_affiliate/get_integration_stored_config_{integration}': {
+    desc: 'Filters an integration\'s stored connector config as it is read from the `_{integration}_connector_config` option. The `{integration}` segment is the integration key (e.g. `woo`, `fluent_cart`). `BaseConnectorSettings` uses this hook to merge each integration\'s defaults into the saved config.',
+    params: [
+      { name: '$config', type: 'array', desc: 'Stored connector configuration for this integration.' },
+    ],
+    example: `add_filter('fluent_affiliate/get_integration_stored_config_woo', function($config) {
+    $config['commission_type'] = $config['commission_type'] ?? 'percentage';
+    return $config;
+});`,
+  },
+  'fluent_affiliate/pro_upgrade_base_url': {
+    desc: 'Filters the base URL used for "Upgrade to Pro" links before UTM parameters are appended. Useful for white-labelling or pointing upgrade prompts at your own reseller page.',
+    params: [
+      { name: '$baseUrl', type: 'string', desc: 'Default `https://fluentaffiliate.com/pricing/`.' },
+    ],
+    example: `add_filter('fluent_affiliate/pro_upgrade_base_url', function($baseUrl) {
+    return 'https://my-agency.test/affiliate-pro/';
+});`,
+  },
+  'fluent_affiliate/recaptcha_v3_ref_score': {
+    desc: 'Filters the reCAPTCHA v3 score threshold a registration must meet to be accepted <span class="pro-badge">PRO</span>. Scores below the threshold are rejected. Defaults to the provider\'s `v3_score_threshold` setting (0.5).',
+    params: [
+      { name: '$threshold', type: 'float', desc: 'Minimum acceptable score, 0.0–1.0.' },
+    ],
+    example: `add_filter('fluent_affiliate/recaptcha_v3_ref_score', function($threshold) {
+    return 0.7; // stricter
+});`,
+  },
+  'fluent_affiliate/captcha_providers': {
+    desc: 'Registers the captcha providers available on the registration form <span class="pro-badge">PRO</span>. Add an instance of a class extending `FluentAffiliatePro\\App\\Services\\Captcha\\AbstractCaptchaProvider` to offer an alternative to the bundled Google reCAPTCHA provider. Entries that are not `AbstractCaptchaProvider` instances are ignored, and each provider is keyed by its `getKey()`.',
+    params: [
+      { name: '$providers', type: 'array', desc: 'Provider instances keyed by provider key — defaults to `[\'recaptcha\' => new RecaptchaProvider()]`.' },
+    ],
+    example: `add_filter('fluent_affiliate/captcha_providers', function($providers) {
+    $providers['turnstile'] = new My_Turnstile_Provider(); // extends AbstractCaptchaProvider
+    return $providers;
+});`,
+  },
+  'fluent_affiliate/recaptcha_remoteip': {
+    desc: 'Filters the `remoteip` value sent to Google when verifying a reCAPTCHA response <span class="pro-badge">PRO</span>. Return an empty string to omit the parameter entirely (data minimization) — Google treats it as optional.',
+    params: [
+      { name: '$ip',       type: 'string', desc: 'Detected visitor IP (Cloudflare / X-Forwarded-For / REMOTE_ADDR).' },
+      { name: '$settings', type: 'array',  desc: 'The active provider settings.' },
+    ],
+    example: `// Don't send visitor IPs to Google
+add_filter('fluent_affiliate/recaptcha_remoteip', '__return_empty_string');`,
+  },
+  'fluent_affiliate/trust_proxy_headers': {
+    desc: 'Controls whether visit tracking trusts proxy headers (`HTTP_CF_CONNECTING_IP`, `X-Forwarded-For`) when resolving the visitor IP. Return `false` on sites that are not behind a trusted proxy so a spoofed header cannot forge visit IPs.',
+    params: [
+      { name: '$trust', type: 'bool', desc: 'Whether proxy headers are trusted. Default `true`.' },
+    ],
+    example: `add_filter('fluent_affiliate/trust_proxy_headers', '__return_false');`,
+  },
+  'fluent_affiliate/admin_menu_title': {
+    desc: 'Filters the FluentAffiliate top-level WordPress admin menu title.',
+    params: [
+      { name: '$title', type: 'string', desc: 'Menu title. Default `FluentAffiliate`.' },
+    ],
+    example: `add_filter('fluent_affiliate/admin_menu_title', function($title) {
+    return 'Partners';
+});`,
+  },
+  'fluent_affiliate_base_url': {
+    desc: 'Filters the base admin URL the admin SPA builds its links from (`admin.php?page=fluent-affiliate#`). Useful when the admin app is mounted somewhere else.',
+    params: [
+      { name: '$baseUrl', type: 'string', desc: 'Admin base URL including the trailing `#`.' },
+    ],
+    example: `add_filter('fluent_affiliate_base_url', function($baseUrl) {
+    return $baseUrl;
+});`,
+  },
+  'fluent_affiliate_tracker_vars': {
+    desc: 'Filters the JS variables localized for the public visit tracker script — cookie duration, referral query parameter, extra tracked query params, last-referrer credit, and the AJAX endpoint.',
+    params: [
+      { name: '$vars', type: 'array', desc: 'Tracker vars: `duration_days`, `aff_param`, `other_params`, `credit_last`, `request_url`.' },
+    ],
+    example: `add_filter('fluent_affiliate_tracker_vars', function($vars) {
+    $vars['other_params'][] = 'gclid'; // also persist Google click ids
+    return $vars;
+});`,
+  },
+  'fluent_affiliate/affiliate_avatar': {
+    desc: 'Filters the avatar URL used for an affiliate or customer record. Defaults to a Gravatar URL built from the email hash — return your own URL to use a different avatar source.',
+    params: [
+      { name: '$url',   type: 'string', desc: 'The default Gravatar URL (128px).' },
+      { name: '$email', type: 'string', desc: 'Email address the avatar is resolved for.' },
+    ],
+    example: `add_filter('fluent_affiliate/affiliate_avatar', function($url, $email) {
+    $userId = email_exists($email);
+    $custom = $userId ? get_user_meta($userId, 'my_avatar_url', true) : '';
+    return $custom ?: $url;
+}, 10, 2);`,
+  },
+  'fluent_affiliate/affiliate_view_data': {
+    desc: 'Filters the affiliate model returned by the single-affiliate admin endpoint (`GET /affiliates/{id}`), after attached coupons and the share URL have been set. Pro uses this to append custom registration field values.',
+    params: [
+      { name: '$affiliate', type: 'Affiliate', desc: 'The Affiliate model being returned to the admin SPA.' },
+    ],
+    example: `add_filter('fluent_affiliate/affiliate_view_data', function($affiliate) {
+    $affiliate->my_extra_data = get_user_meta($affiliate->user_id, 'my_field', true);
+    return $affiliate;
+});`,
+  },
+  'fluent_affiliate/auth/custom_field_values': {
+    desc: 'Collects and validates values for custom registration fields during affiliate signup and portal profile updates. Merge into the accumulated array and return it, or return a `WP_Error` to abort with a validation message. Pro\'s custom registration fields feature hooks here.',
+    params: [
+      { name: '$values',    type: 'array', desc: 'Accumulated custom field values — merge into this, do not replace it.' },
+      { name: '$fields',    type: 'array', desc: 'Registration form field definitions.' },
+      { name: '$submitted', type: 'array', desc: 'Submitted values restricted to the known field keys.' },
+    ],
+    example: `add_filter('fluent_affiliate/auth/custom_field_values', function($values, $fields, $submitted) {
+    if (empty($submitted['company'])) {
+        return new \\WP_Error('validation_failed', 'Company is required.');
+    }
+    $values['company'] = sanitize_text_field($submitted['company']);
+    return $values;
+}, 10, 3);`,
+  },
+  'fluent_affiliate/auth/pre_registration_errors': {
+    desc: 'Runs before an affiliate registration is accepted, after field sanitization. Return a non-empty array to reject the request with HTTP 422. Pro\'s captcha verification hooks here.',
+    params: [
+      { name: '$errors',  type: 'array',   desc: 'Error payload — return `[]` to allow, or `[\'message\' => string, \'errors\' => array]` to block.' },
+      { name: '$data',    type: 'array',   desc: 'Sanitized registration data.' },
+      { name: '$request', type: 'Request', desc: 'The current request object.' },
+    ],
+    example: `add_filter('fluent_affiliate/auth/pre_registration_errors', function($errors, $data, $request) {
+    if (str_ends_with($data['email'], '@example.test')) {
+        $errors['message'] = 'This email domain is not allowed.';
+    }
+    return $errors;
+}, 10, 3);`,
+  },
+  'fluent_affiliate/portal/settings_data': {
+    desc: 'Filters the affiliate portal settings screen payload — both the rendered form fields and their current values. Pro uses this to inject custom registration fields into the portal profile form.',
+    params: [
+      { name: '$data',      type: 'array',     desc: 'Array with `form_fields` and `settings` keys.' },
+      { name: '$affiliate', type: 'Affiliate', desc: 'The affiliate whose portal settings are being loaded.' },
+    ],
+    example: `add_filter('fluent_affiliate/portal/settings_data', function($data, $affiliate) {
+    $data['form_fields']['company'] = ['label' => 'Company', 'type' => 'text'];
+    $data['settings']['company']    = get_user_meta($affiliate->user_id, 'company', true);
+    return $data;
+}, 10, 2);`,
+  },
+  'fluent_affiliate/update_feature_settings_{featureKey}': {
+    desc: 'Filters (and may validate) a feature module\'s settings payload before it is saved. The `{featureKey}` segment is the feature slug (e.g. `affiliate_qr_code`, `social_media_share`). Return a `WP_Error` to reject the save.',
+    params: [
+      { name: '$settings', type: 'array',   desc: 'Submitted settings for this feature.' },
+      { name: '$request',  type: 'Request', desc: 'The current request object.' },
+    ],
+    example: `add_filter('fluent_affiliate/update_feature_settings_affiliate_qr_code', function($settings, $request) {
+    $settings['size'] = min((int) ($settings['size'] ?? 200), 512);
+    return $settings;
+}, 10, 2);`,
+  },
+  'fluent_affiliate/formatted_order_data_by_{provider}': {
+    desc: 'Filters the normalized order payload an integration builds before a referral is recorded. The `{provider}` segment is the integration key (e.g. `fluent_cart`). Use it to adjust totals, items, or the commission base (`referral_order_total`).',
+    params: [
+      { name: '$data',  type: 'array',  desc: 'Normalized order data: `subtotal`, `tax`, `discount`, `shipping`, `total`, `items`, `referral_order_total`.' },
+      { name: '$order', type: 'object', desc: 'The source order object from the integrated plugin.' },
+    ],
+    example: `add_filter('fluent_affiliate/formatted_order_data_by_fluent_cart', function($data, $order) {
+    // Exclude shipping from the commissionable total
+    $data['referral_order_total'] -= $data['shipping'];
+    return $data;
+}, 10, 2);`,
+  },
+
   // ── Pro: Recurring Commission Filters ─────────────────────────────────────
   'fluent_affiliate/recurring_commission': {
     desc: 'Filters the recurring commission data before it is recorded for a subscription renewal.',
@@ -2083,7 +2302,7 @@ function buildHookCategoryDoc(title, hooks, hookMap, type) {
   return lines.join('\n') + '\n'
 }
 
-function buildHooksIndexDoc(actionMap, filterMap) {
+function buildHooksIndexDoc(actionMap, filterMap, hasMiscActions = false, hasMiscFilters = false) {
   const actionCount = Object.keys(actionMap).length
   const filterCount = Object.keys(filterMap).length
 
@@ -2108,6 +2327,7 @@ function buildHooksIndexDoc(actionMap, filterMap) {
     '| [Integrations](/hooks/actions/integrations) | Third-party integration and migration events |',
     '| [Groups](/hooks/actions/groups) | Affiliate group lifecycle events <span class="pro-badge">PRO</span> |',
     '| [Creatives](/hooks/actions/creatives) | Creative asset lifecycle events <span class="pro-badge">PRO</span> |',
+    ...(hasMiscActions ? ['| [Miscellaneous](/hooks/actions/misc) | Hooks that do not fit the categories above |'] : []),
     '',
     '## Filter Hooks',
     '',
@@ -2122,11 +2342,12 @@ function buildHooksIndexDoc(actionMap, filterMap) {
     '| [Integrations](/hooks/filters/integrations) | Integration config and data filters |',
     '| [Groups](/hooks/filters/groups) | Affiliate group data filters <span class="pro-badge">PRO</span> |',
     '| [Creatives](/hooks/filters/creatives) | Creative asset data filters <span class="pro-badge">PRO</span> |',
+    ...(hasMiscFilters ? ['| [Miscellaneous](/hooks/filters/misc) | Filters that do not fit the categories above |'] : []),
     '',
   ].join('\n') + '\n'
 }
 
-function buildActionHooksIndexDoc(actionMap) {
+function buildActionHooksIndexDoc(actionMap, hasMisc = false) {
   const actionCount = Object.keys(actionMap).length
 
   return [
@@ -2148,11 +2369,12 @@ function buildActionHooksIndexDoc(actionMap) {
     '| [Integrations](/hooks/actions/integrations) | Third-party integration events and data migration hooks |',
     '| [Groups](/hooks/actions/groups) | Affiliate group lifecycle events <span class="pro-badge">PRO</span> |',
     '| [Creatives](/hooks/actions/creatives) | Creative asset lifecycle events <span class="pro-badge">PRO</span> |',
+    ...(hasMisc ? ['| [Miscellaneous](/hooks/actions/misc) | Hooks that do not fit the categories above |'] : []),
     '',
   ].join('\n') + '\n'
 }
 
-function buildFilterHooksIndexDoc(filterMap) {
+function buildFilterHooksIndexDoc(filterMap, hasMisc = false) {
   const filterCount = Object.keys(filterMap).length
 
   return [
@@ -2177,6 +2399,7 @@ function buildFilterHooksIndexDoc(filterMap) {
     '| [Integrations](/hooks/filters/integrations) | Integration configuration, menu labels, and product option filters |',
     '| [Groups](/hooks/filters/groups) | Affiliate group data filters <span class="pro-badge">PRO</span> |',
     '| [Creatives](/hooks/filters/creatives) | Creative asset data filters <span class="pro-badge">PRO</span> |',
+    ...(hasMisc ? ['| [Miscellaneous](/hooks/filters/misc) | Filters that do not fit the categories above |'] : []),
     '',
   ].join('\n') + '\n'
 }
@@ -2204,6 +2427,10 @@ const REST_DESCRIPTIONS = {
   'GET /affiliates/{id}/stats':   'Get summary stats for an affiliate.',
   'GET /affiliates/{id}/statistics': 'Get detailed statistics for an affiliate.',
   'GET /affiliates/{id}/customers': 'List the customers acquired by an affiliate.',
+  'GET /affiliates/{id}/crm-contact': 'Get the FluentCRM contact linked to an affiliate, with its current tags and lists. Requires FluentCRM to be active and the `fcrm_read_contacts` capability.',
+  'GET /affiliates/{id}/crm-options': 'Search FluentCRM tag or list options for the taxonomy picker. Pass `type=tags` (default) or `type=lists` plus an optional `search` term.',
+  'POST /affiliates/{id}/crm-contact/tags': 'Attach or detach FluentCRM tags on the affiliate\'s CRM contact.',
+  'POST /affiliates/{id}/crm-contact/lists': 'Attach or detach FluentCRM lists on the affiliate\'s CRM contact.',
   'GET /affiliates/{id}/customers/search': 'Search customers to link to an affiliate for lifetime commissions.',
   'POST /affiliates/{id}/customers/link': 'Link a customer to an affiliate for lifetime commissions.',
   'DELETE /affiliates/{id}/customers/{customerId}': 'Unlink a customer from an affiliate.',
@@ -2237,15 +2464,12 @@ const REST_DESCRIPTIONS = {
   'GET /portal/settings':         'Get the authenticated affiliate\'s portal settings.',
   'POST /portal/settings':        'Update the authenticated affiliate\'s portal settings.',
   // Reports
-  'GET /reports/advanced-providers': 'List advanced report providers.',
-  'GET /reports/commerce-reports/{provider}': 'Get reports for a specific commerce provider.',
   'GET /reports/dashboard-stats': 'Get dashboard KPI statistics.',
   'GET /reports/dashboard-chart-stats': 'Get time-series data for dashboard charts.',
   // Settings
   'GET /settings/email-config':   'Get email notification configuration.',
   'POST /settings/email-config':  'Update email notification configuration.',
   'GET /settings/email-config/emails': 'List all notification email templates.',
-  'POST /settings/email-config/emails': 'Update all notification email templates.',
   'PATCH /settings/email-config/emails': 'Update a single notification email template.',
   'GET /settings/features':       'List all feature modules.',
   'GET /settings/features/{feature_key}': 'Get settings for a specific feature.',
@@ -2303,6 +2527,9 @@ const REST_DESCRIPTIONS = {
   // Pro: additional settings
   'GET /settings/options/affiliate-groups': 'Get affiliate group options for select inputs.',
   'POST /settings/registration-fields':     'Save affiliate registration field configuration.',
+  'GET /settings/captcha':                  'Get the captcha (Google reCAPTCHA) settings, the available provider list, and whether the active provider\'s keys have been validated. Secret keys are returned masked.',
+  'POST /settings/captcha':                 'Save captcha settings. Enabling a provider is rejected unless its keys have passed the validate-keys check first.',
+  'POST /settings/captcha/validate':        'Validate a provider\'s captcha site/secret key pair against the provider\'s API before saving.',
   'GET /settings/managers':                 'List affiliate managers.',
   'POST /settings/managers':               'Add or update an affiliate manager.',
   'DELETE /settings/managers/{id}':        'Remove an affiliate manager.',
@@ -2315,7 +2542,7 @@ const REST_DESCRIPTIONS = {
 const REST_MODULE_META = {
   affiliates: {
     title: 'Affiliates API',
-    description: 'Affiliate listing, creation, updates, deletion, and per-affiliate statistics and transactions.',
+    description: 'Affiliate listing, creation, updates, deletion, per-affiliate statistics and transactions, FluentCRM contact management, and lifetime-commission customer links.',
     auth: 'These routes are protected by `AffiliatePolicy`. Admin users have full access; affiliate-level users require the `read_all_affiliates` capability.',
     isPro: false,
   },
@@ -2345,13 +2572,13 @@ const REST_MODULE_META = {
   },
   reports: {
     title: 'Reports API',
-    description: 'Dashboard statistics, chart data, advanced commerce reports, and report provider listing.',
-    auth: 'Reports routes use `UserPolicy`. Dashboard stats require admin access; advanced report access depends on user capabilities.',
+    description: 'Dashboard KPI statistics and dashboard chart time-series data.',
+    auth: 'Reports routes are protected by `ReportPolicy`, which grants access to any user holding at least one FluentAffiliate permission (`PermissionManager::hasAnyPermission()`).',
     isPro: false,
   },
   settings: {
     title: 'Settings API',
-    description: 'Email configuration, feature settings, integrations, referral config, page management, migrations, and registration fields.',
+    description: 'Email configuration, feature settings, integrations, referral config, page management, migrations, registration fields, captcha, and affiliate managers.',
     auth: 'All settings routes are protected by `AdminPolicy` and require WordPress administrator access.',
     isPro: false,
   },
@@ -2469,6 +2696,10 @@ const OPERATION_SLUG_MAP = [
   { module: 'affiliates', method: 'GET',    path: /^\/affiliates\/.+\/customers$/, slug: 'list-affiliate-customers' },
   { module: 'affiliates', method: 'POST',   path: /^\/affiliates\/.+\/customers\/link$/, slug: 'link-affiliate-customer' },
   { module: 'affiliates', method: 'DELETE', path: /^\/affiliates\/.+\/customers\/.+$/, slug: 'unlink-affiliate-customer' },
+  { module: 'affiliates', method: 'GET',    path: /^\/affiliates\/.+\/crm-contact$/, slug: 'get-affiliate-crm-contact' },
+  { module: 'affiliates', method: 'GET',    path: /^\/affiliates\/.+\/crm-options$/, slug: 'get-affiliate-crm-options' },
+  { module: 'affiliates', method: 'POST',   path: /^\/affiliates\/.+\/crm-contact\/tags$/, slug: 'update-affiliate-crm-tags' },
+  { module: 'affiliates', method: 'POST',   path: /^\/affiliates\/.+\/crm-contact\/lists$/, slug: 'update-affiliate-crm-lists' },
   { module: 'affiliates', method: 'GET',    path: /^\/affiliates\/.+$/, slug: 'get-affiliate' },
   { module: 'affiliates', method: 'DELETE', path: /^\/affiliates\/.+$/, slug: 'delete-affiliate' },
   { module: 'affiliates', method: 'PATCH',  path: /^\/affiliates\/.+\/status$/, slug: 'update-affiliate-status' },
@@ -2536,6 +2767,9 @@ const OPERATION_SLUG_MAP = [
   { module: 'settings', method: 'GET',   path: /^\/settings\/options\/users$/, slug: 'get-user-options' },
   { module: 'settings', method: 'GET',   path: /^\/settings\/registration-fields$/, slug: 'get-registration-fields' },
   { module: 'settings', method: 'POST',  path: /^\/settings\/registration-fields$/, slug: 'update-registration-fields' },
+  { module: 'settings', method: 'GET',   path: /^\/settings\/captcha$/, slug: 'get-captcha-settings' },
+  { module: 'settings', method: 'POST',  path: /^\/settings\/captcha\/validate$/, slug: 'validate-captcha-keys' },
+  { module: 'settings', method: 'POST',  path: /^\/settings\/captcha$/, slug: 'update-captcha-settings' },
   { module: 'settings', method: 'GET',   path: /^\/settings\/managers$/, slug: 'list-managers' },
   { module: 'settings', method: 'POST',  path: /^\/settings\/managers$/, slug: 'update-managers' },
   { module: 'settings', method: 'DELETE', path: /^\/settings\/managers\/.+$/, slug: 'delete-manager' },
@@ -2729,6 +2963,27 @@ const affiliateDetailObject = {
     widgets:           { type: 'array', items: { type: 'object' } },
     attached_coupons:  { type: 'array', items: { type: 'object' } },
     share_url:         { type: 'string' },
+  },
+}
+
+const captchaSettingsObject = {
+  type: 'object',
+  description: 'Captcha settings. Secret keys are returned masked.',
+  properties: {
+    enabled:         { type: 'string', enum: ['yes', 'no'] },
+    active_provider: { type: 'string', description: 'Provider key, e.g. `recaptcha`.' },
+    providers: {
+      type: 'object',
+      description: 'Per-provider settings keyed by provider key. For `recaptcha`: `version` (`v2_visible` | `v3_invisible`), `v2_site_key`, `v2_secret_key`, `v3_site_key`, `v3_secret_key`, `v3_score_threshold`, `error_message`.',
+    },
+  },
+}
+
+const crmTaxonomyOption = {
+  type: 'object',
+  properties: {
+    id:    { type: 'integer' },
+    title: { type: 'string' },
   },
 }
 
@@ -2926,6 +3181,38 @@ const RESPONSE_SCHEMAS = {
     properties: {
       data:   { type: 'array', items: { type: 'object' } },
       labels: { type: 'array', items: { type: 'string' } },
+    },
+  },
+  'get-affiliate-crm-contact': {
+    type: 'object',
+    properties: {
+      exists:         { type: 'boolean' },
+      tag_ids:        { type: 'array', items: { type: 'integer' } },
+      list_ids:       { type: 'array', items: { type: 'integer' } },
+      selected_tags:  { type: 'array', items: crmTaxonomyOption },
+      selected_lists: { type: 'array', items: crmTaxonomyOption },
+    },
+  },
+  'get-affiliate-crm-options': {
+    type: 'object',
+    properties: {
+      options: { type: 'array', items: crmTaxonomyOption, description: 'Up to 50 matching tag or list options.' },
+    },
+  },
+  'update-affiliate-crm-tags': {
+    type: 'object',
+    properties: {
+      tag_ids:  { type: 'array', items: { type: 'integer' } },
+      list_ids: { type: 'array', items: { type: 'integer' } },
+      message:  { type: 'string' },
+    },
+  },
+  'update-affiliate-crm-lists': {
+    type: 'object',
+    properties: {
+      tag_ids:  { type: 'array', items: { type: 'integer' } },
+      list_ids: { type: 'array', items: { type: 'integer' } },
+      message:  { type: 'string' },
     },
   },
   // ── Referrals ────────────────────────────────────────────────────────────
@@ -3203,32 +3490,6 @@ const RESPONSE_SCHEMAS = {
       labels: { type: 'array', items: { type: 'string' } },
     },
   },
-  'list-advanced-providers': {
-    type: 'object',
-    properties: {
-      providers: {
-        type: 'object',
-        properties: {
-          fla: { type: 'object', properties: { title: { type: 'string' } } },
-          edd: { type: 'object', properties: { title: { type: 'string' } } },
-          woo: { type: 'object', properties: { title: { type: 'string' } } },
-        },
-      },
-    },
-  },
-  'get-commerce-report': {
-    type: 'object',
-    properties: {
-      report: {
-        type: 'object',
-        properties: {
-          enabled: { type: 'boolean' },
-          title:   { type: 'string' },
-          widgets: { type: 'array', items: { type: 'object', properties: { label: { type: 'string' }, value: {}, is_money: { type: 'boolean' } } } },
-        },
-      },
-    },
-  },
   // ── Settings ─────────────────────────────────────────────────────────────
   'get-email-config': {
     type: 'object',
@@ -3373,6 +3634,31 @@ const RESPONSE_SCHEMAS = {
       settings: { type: 'object' },
     },
     required: ['message'],
+  },
+  'get-captcha-settings': {
+    type: 'object',
+    properties: {
+      settings:  captchaSettingsObject,
+      providers: { type: 'array', items: { type: 'object', properties: { key: { type: 'string' }, title: { type: 'string' } } } },
+      validated: { type: 'boolean', description: 'Whether the active provider\'s stored keys have passed validation.' },
+    },
+  },
+  'update-captcha-settings': {
+    type: 'object',
+    properties: {
+      message:   { type: 'string' },
+      settings:  captchaSettingsObject,
+      providers: { type: 'array', items: { type: 'object', properties: { key: { type: 'string' }, title: { type: 'string' } } } },
+      validated: { type: 'boolean' },
+    },
+  },
+  'validate-captcha-keys': {
+    type: 'object',
+    properties: {
+      valid:   { type: 'boolean' },
+      message: { type: 'string' },
+    },
+    required: ['valid', 'message'],
   },
   'list-managers': {
     type: 'object',
@@ -3767,8 +4053,10 @@ async function main() {
   console.log('  tables found:', Object.keys(tables).join(', '))
 
   // ── Hooks ─────────────────────────────────────────────────────────────────
-  const sourceDirs = [join(coreRoot, 'app')]
-  if (hasPro) sourceDirs.push(join(proRoot, 'app'))
+  // Hooks are not confined to app/ — the bootstrap actions live in boot/ and
+  // the currency filter lives in config/.
+  const sourceDirs = [join(coreRoot, 'app'), join(coreRoot, 'boot'), join(coreRoot, 'config')]
+  if (hasPro) sourceDirs.push(join(proRoot, 'app'), join(proRoot, 'boot'))
 
   const { actions: rawActions, filters: rawFilters } = extractHooks(sourceDirs)
 
@@ -3777,8 +4065,14 @@ async function main() {
   // sees $affiliate->status and captures 'affiliate', but the meaningful placeholder is 'status')
   const HOOK_NAME_ALIASES = {
     'fluent_affiliate/affiliate_status_to_{affiliate}': 'fluent_affiliate/affiliate_status_to_{status}',
-    'fluent_affiliate/provider_reference_{this}':       'fluent_affiliate/provider_reference_{provider}_url',
-    'fluent_affiliate/provider_reference_{referral}':   'fluent_affiliate/provider_reference_{provider}_url',
+    'fluent_affiliate/affiliate_status_to_active':      'fluent_affiliate/affiliate_status_to_{status}',
+    'fluent_affiliate/provider_reference_{this}_url':     'fluent_affiliate/provider_reference_{provider}_url',
+    'fluent_affiliate/provider_reference_{referral}_url': 'fluent_affiliate/provider_reference_{provider}_url',
+    'fluent_affiliate/get_integration_stored_config_{integrationKey}':
+      'fluent_affiliate/get_integration_stored_config_{integration}',
+    'fluent_affiliate/formatted_order_data_by_{this}':  'fluent_affiliate/formatted_order_data_by_{provider}',
+    'fluent_affiliate/payout/transaction/transaction_updated_to_{transaction}':
+      'fluent_affiliate/payout/transaction/transaction_updated_to_{status}',
   }
   const normaliseHookMap = (map) => {
     const out = {}
@@ -3969,9 +4263,9 @@ async function main() {
   // ── Write hook docs ───────────────────────────────────────────────────────
   console.log('\nWriting hook docs…')
 
-  writeDoc(join(DOCS_DIR, 'hooks', 'index.md'), buildHooksIndexDoc(actions, filters))
-  writeDoc(join(DOCS_DIR, 'hooks', 'actions', 'index.md'), buildActionHooksIndexDoc(actions))
-  writeDoc(join(DOCS_DIR, 'hooks', 'filters', 'index.md'), buildFilterHooksIndexDoc(filters))
+  // Every page under docs/hooks/ is generated — wipe it so removed hooks and
+  // now-empty category pages don't linger.
+  cleanDir(join(DOCS_DIR, 'hooks'))
 
   const ACTION_PAGE_CATEGORIES = {
     integrations: h => /affiliate_created_via_fluent_form|wipe_current_data/.test(h),
@@ -3979,8 +4273,9 @@ async function main() {
     groups:       h => /affiliate_group/.test(h),
     referrals:    h => /\/referral|recurring_referral/.test(h),
     payouts:      h => /\/payout/.test(h),
-    portal:       h => /render_login|render_signup|email_head/.test(h),
+    portal:       h => /render_login|render_signup|email_head|register_form_after_fields/.test(h),
     creatives:    h => /creative/.test(h),
+    misc:         () => true,
   }
 
   const FILTER_PAGE_CATEGORIES = {
@@ -3990,10 +4285,11 @@ async function main() {
     payouts:      h => /\/payout/.test(h),
     permissions:  h => /has_all_|user_has_affiliate_access/.test(h),
     portal:       h => /\/portal|default_share_url|will_load_tracker|smartcode|smart_code/.test(h),
-    settings:     h => /get_email_config|update_email_config|get_referral_config|update_referral_config|get_feature|update_feature|settings_menu|top_menu|right_menu|admin_vars|dashboard_notices|admin_url|portal_page_url|registered_features|max_execution|is_rtl|suggested_colors|payout_form_schema|referral_formats|portal_menu_items|get_currencies|currency_symbols|referral_config_field_types|default_referral_settings|social_media|fluent_affiliate_base_url|fluent_affiliate_tracker_vars|fluent_affiliate_dashboard/.test(h),
-    auth:         h => /\/auth\/|terms_policy|reserved_usernames/.test(h),
-    integrations: h => /get_integrations|get_integration_config|save_integration_config|user_ip|\/migrators|get_migration|get_current_data|wppayform|advanced_report|woo_menu|product_cat_options/.test(h),
+    settings:     h => /get_email_config|update_email_config|get_referral_config|update_referral_config|get_feature|update_feature|settings_menu|top_menu|right_menu|admin_vars|admin_menu_title|dashboard_notices|admin_url|portal_page_url|registered_features|max_execution|is_rtl|suggested_colors|payout_form_schema|referral_formats|portal_menu_items|\/currencies|get_currencies|currency_symbols|referral_config_field_types|default_referral_settings|social_media|pro_upgrade_base_url|fluent_affiliate_base_url|fluent_affiliate_tracker_vars|fluent_affiliate_dashboard/.test(h),
+    auth:         h => /\/auth\/|terms_policy|reserved_usernames|captcha/.test(h),
+    integrations: h => /get_integrations|get_integration_config|get_integration_stored_config|save_integration_config|user_ip|trust_proxy_headers|\/migrators|get_migration|get_current_data|wppayform|advanced_report|woo_menu|product_cat_options/.test(h),
     creatives:    h => /creative/.test(h),
+    misc:         () => true,
   }
 
   const actionsByCategory = {}
@@ -4018,6 +4314,13 @@ async function main() {
     }
   }
 
+  const hasMiscActions = (actionsByCategory.misc ?? []).length > 0
+  const hasMiscFilters = (filtersByCategory.misc ?? []).length > 0
+
+  writeDoc(join(DOCS_DIR, 'hooks', 'index.md'), buildHooksIndexDoc(actions, filters, hasMiscActions, hasMiscFilters))
+  writeDoc(join(DOCS_DIR, 'hooks', 'actions', 'index.md'), buildActionHooksIndexDoc(actions, hasMiscActions))
+  writeDoc(join(DOCS_DIR, 'hooks', 'filters', 'index.md'), buildFilterHooksIndexDoc(filters, hasMiscFilters))
+
   const actionCategoryTitles = {
     affiliates:   'Affiliates',
     groups:       'Groups (Pro)',
@@ -4026,6 +4329,7 @@ async function main() {
     portal:       'Portal',
     integrations: 'Integrations',
     creatives:    'Creatives (Pro)',
+    misc:         'Miscellaneous',
   }
 
   const filterCategoryTitles = {
@@ -4039,16 +4343,20 @@ async function main() {
     auth:         'Auth',
     integrations: 'Integrations',
     creatives:    'Creatives (Pro)',
+    misc:         'Miscellaneous',
   }
 
   for (const [cat, title] of Object.entries(actionCategoryTitles)) {
     const hooks = actionsByCategory[cat] ?? []
+    // The misc fallback page only exists when something actually lands in it.
+    if (cat === 'misc' && !hooks.length) continue
     const content = buildHookCategoryDoc(title, hooks, actions, 'action')
     if (content) writeDoc(join(DOCS_DIR, 'hooks', 'actions', `${cat}.md`), content)
   }
 
   for (const [cat, title] of Object.entries(filterCategoryTitles)) {
     const hooks = filtersByCategory[cat] ?? []
+    if (cat === 'misc' && !hooks.length) continue
     const content = buildHookCategoryDoc(title, hooks, filters, 'filter')
     if (content) writeDoc(join(DOCS_DIR, 'hooks', 'filters', `${cat}.md`), content)
   }
