@@ -16,7 +16,7 @@ description: Filter hooks in the Referrals category.
 | [`fluent_affiliate/referral_data`](#fluent-affiliate-referral-data) | Filters the referral data array before a referral is recorded by an integration. |
 | [`fluent_affiliate/ignore_zero_amount_referral`](#fluent-affiliate-ignore-zero-amount-referral) | Filters whether referrals with a zero commission amount should be discarded. |
 | [`fluent_affiliate/commission`](#fluent-affiliate-commission) | Filters the calculated commission amount before it is saved to a referral. |
-| [`fluent_affiliate/formatted_order_data_by_{this}`](#fluent-affiliate-formatted-order-data-by-this) | See source. |
+| [`fluent_affiliate/formatted_order_data_by_{provider}`](#fluent-affiliate-formatted-order-data-by-provider) | Filters the normalized order payload an integration builds before a referral is recorded. |
 | [`fluent_affiliate/recurring_commission`](#fluent-affiliate-recurring-commission) | Filters the recurring commission data before it is recorded for a subscription renewal. |
 
 ## `fluent_affiliate/referral_config_field_types`
@@ -143,7 +143,7 @@ Filters the calculated commission amount before it is saved to a referral.
 | `$commission` | `float` | Calculated commission amount. |
 | `$context` | `array` | Contextual data: `order`, `affiliate`, `rate`, `rate_type`, etc. |
 
-**Source:** `app/Modules/Integrations/FluentCart/Bootstrap.php`
+**Source:** `app/Modules/Integrations/BaseConnector.php`
 
 ```php
 add_filter('fluent_affiliate/commission', function($commission, $context) {
@@ -152,11 +152,26 @@ add_filter('fluent_affiliate/commission', function($commission, $context) {
 }, 10, 2);
 ```
 
-## `fluent_affiliate/formatted_order_data_by_{this}`
+## `fluent_affiliate/formatted_order_data_by_{provider}`
 
-Dynamic hook — the suffix is determined at runtime. See source for exact usage.
+Filters the normalized order payload an integration builds before a referral is recorded. The `{provider}` segment is the integration key (e.g. `fluent_cart`). Use it to adjust totals, items, or the commission base (`referral_order_total`).
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$data` | `array` | Normalized order data: `subtotal`, `tax`, `discount`, `shipping`, `total`, `items`, `referral_order_total`. |
+| `$order` | `object` | The source order object from the integrated plugin. |
 
 **Source:** `app/Modules/Integrations/FluentCart/Bootstrap.php`
+
+```php
+add_filter('fluent_affiliate/formatted_order_data_by_fluent_cart', function($data, $order) {
+    // Exclude shipping from the commissionable total
+    $data['referral_order_total'] -= $data['shipping'];
+    return $data;
+}, 10, 2);
+```
 
 ## `fluent_affiliate/recurring_commission`
 

@@ -10,9 +10,9 @@ description: Action hooks in the Referrals category.
 | Hook | Description |
 |------|-------------|
 | [`fluent_affiliate/referral_marked_unpaid`](#fluent-affiliate-referral-marked-unpaid) | Fired after a referral's status is set to `unpaid` (ready for payout). |
+| [`fluent_affiliate/referral_created`](#fluent-affiliate-referral-created) | Fired after a new referral record is inserted into the database. |
 | [`fluent_affiliate/referral/before_delete`](#fluent-affiliate-referral-before-delete) | Fired immediately before a referral record is deleted. |
 | [`fluent_affiliate/referral/deleted`](#fluent-affiliate-referral-deleted) | Fired after a referral has been permanently deleted. |
-| [`fluent_affiliate/referral_created`](#fluent-affiliate-referral-created) | Fired after a new referral record is inserted into the database. |
 | [`fluent_affiliate/referral_marked_rejected`](#fluent-affiliate-referral-marked-rejected) | Fired after a referral is marked as rejected. |
 | [`fluent_affiliate/referral_commission_updated`](#fluent-affiliate-referral-commission-updated) | Fired after the commission amount on an existing referral is updated. |
 | [`fluent_affiliate/recurring_referral_created`](#fluent-affiliate-recurring-referral-created) | Fired after a recurring referral is recorded for a subscription renewal (WooCommerce Subscriptions or FluentCart). |
@@ -32,6 +32,24 @@ Fired after a referral's status is set to `unpaid` (ready for payout).
 ```php
 add_action('fluent_affiliate/referral_marked_unpaid', function($referral) {
     // Update an external ledger, send a notification, etc.
+});
+```
+
+## `fluent_affiliate/referral_created`
+
+Fired after a new referral record is inserted into the database.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$referral` | `Referral` | The new Referral model instance. |
+
+**Source:** `app/Http/Controllers/ReferralController.php`
+
+```php
+add_action('fluent_affiliate/referral_created', function($referral) {
+    // React to a new referral — e.g. send a notification.
 });
 ```
 
@@ -70,24 +88,6 @@ Fired after a referral has been permanently deleted.
 add_action('fluent_affiliate/referral/deleted', function($id, $affiliate) {
     // Post-deletion cleanup.
 }, 10, 2);
-```
-
-## `fluent_affiliate/referral_created`
-
-Fired after a new referral record is inserted into the database.
-
-**Parameters**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `$referral` | `Referral` | The new Referral model instance. |
-
-**Source:** `app/Modules/Integrations/BaseConnector.php`
-
-```php
-add_action('fluent_affiliate/referral_created', function($referral) {
-    // React to a new referral — e.g. send a notification.
-});
 ```
 
 ## `fluent_affiliate/referral_marked_rejected`

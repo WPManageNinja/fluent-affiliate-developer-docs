@@ -7,7 +7,7 @@ description: Developer introduction to FluentAffiliate — architecture, authent
 
 ## Overview
 
-FluentAffiliate is a self-hosted WordPress affiliate program management plugin by WPManageNinja (v1.2.0+). It requires PHP 7.4+ and WordPress 5.0+. The plugin manages affiliates, tracks referrals, processes payouts, and integrates with e-commerce plugins through a two-class connector pattern.
+FluentAffiliate is a self-hosted WordPress affiliate program management plugin by WPManageNinja (v1.6.0). It requires PHP 7.4+ and WordPress 5.0+. The plugin manages affiliates, tracks referrals, processes payouts, and integrates with e-commerce plugins through a two-class connector pattern.
 
 All data is stored in custom database tables (prefixed `fa_`) rather than WordPress post types. There is no dependency on external SaaS services — the plugin runs entirely within your WordPress installation.
 
@@ -124,13 +124,14 @@ Route groups use policy classes for authorization. Each policy implements `verif
 | PayoutPolicy | `/payouts` | Users with `read_all_payouts` or `manage_all_payouts` |
 | VisitPolicy | `/visits` | Users with `read_all_visits` |
 | AdminPolicy | `/settings` | WordPress `manage_options` or `manage_all_data` |
-| UserPolicy | `/portal`, `/reports` | Any authenticated WordPress user |
+| UserPolicy | `/portal` | Any authenticated WordPress user |
+| ReportPolicy | `/reports` | Users holding at least one FluentAffiliate permission (`PermissionManager::hasAnyPermission()`) |
 
 All permission checks delegate to `FluentAffiliate\App\Services\PermissionManager`. WordPress administrators (users with `manage_options`) always pass all policy checks.
 
 ## Custom Permissions
 
-FluentAffiliate defines 8 granular permissions that can be assigned to any WordPress user. These are stored as user meta and are independent of WordPress roles.
+FluentAffiliate defines 8 granular permissions that can be assigned to any WordPress user. They are stored in the plugin's own `fa_meta` table (`object_type = 'user_meta'`, `meta_key = '_fa_access_permissions'`) — not in WordPress user meta — and are independent of WordPress roles.
 
 | Permission | Description |
 |---|---|
@@ -146,12 +147,35 @@ FluentAffiliate defines 8 granular permissions that can be assigned to any WordP
 Assign permissions programmatically:
 
 ```php
-update_user_meta( $user_id, '_fa_permissions', [
+use FluentAffiliate\App\Models\Meta;
+use FluentAffiliate\App\Services\PermissionManager;
+
+// setPermissions() validates the set and collapses redundant read/manage pairs
+$permissions = PermissionManager::setPermissions([
     'read_all_affiliates',
     'read_all_referrals',
     'read_all_payouts',
-] );
+]);
+
+$meta = Meta::where('object_type', 'user_meta')
+    ->where('object_id', $userId)
+    ->where('meta_key', '_fa_access_permissions')
+    ->first();
+
+if ($meta) {
+    $meta->value = $permissions;
+    $meta->save();
+} else {
+    Meta::create([
+        'object_type' => 'user_meta',
+        'object_id'   => $userId,
+        'meta_key'    => '_fa_access_permissions',
+        'value'       => $permissions,
+    ]);
+}
 ```
+
+Admins with `manage_options` bypass this table entirely — see the [Permission Manager guide](/guides/permission-manager).
 
 ## Hook Prefix
 

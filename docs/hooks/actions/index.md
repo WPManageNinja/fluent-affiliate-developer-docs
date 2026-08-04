@@ -5,7 +5,7 @@ description: All FluentAffiliate WordPress action hooks, organized by category.
 
 # Action Hooks
 
-FluentAffiliate fires **31 action hooks** (including dynamic variants). Use `add_action()` to hook into these events.
+FluentAffiliate fires **35 action hooks** (including dynamic variants). Use `add_action()` to hook into these events.
 
 | Category | Description |
 |----------|-------------|
@@ -16,4 +16,5 @@ FluentAffiliate fires **31 action hooks** (including dynamic variants). Use `add
 | [Integrations](/hooks/actions/integrations) | Third-party integration events and data migration hooks |
 | [Groups](/hooks/actions/groups) | Affiliate group lifecycle events <span class="pro-badge">PRO</span> |
 | [Creatives](/hooks/actions/creatives) | Creative asset lifecycle events <span class="pro-badge">PRO</span> |
+| [Miscellaneous](/hooks/actions/misc) | Hooks that do not fit the categories above |
 

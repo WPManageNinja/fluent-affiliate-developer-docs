@@ -15,7 +15,6 @@ description: Action hooks in the Affiliates category.
 | [`fluent_affiliate/after_delete_affiliate`](#fluent-affiliate-after-delete-affiliate) | Fires after an affiliate has been permanently deleted. |
 | [`fluent_affiliate/affiliate_status_to_{status}`](#fluent-affiliate-affiliate-status-to-status) | Fired when an affiliate's status changes. |
 | [`fluent_affiliate/affiliate_created`](#fluent-affiliate-affiliate-created) | Fired after a new affiliate record is created. |
-| [`fluent_affiliate/affiliate_status_to_active`](#fluent-affiliate-affiliate-status-to-active) | See source. |
 
 ## `fluent_affiliate/admin_app_rendering`
 
@@ -124,8 +123,4 @@ add_action('fluent_affiliate/affiliate_created', function($affiliate, $user) {
     my_plugin_send_affiliate_welcome($affiliate->payment_email);
 }, 10, 2);
 ```
-
-## `fluent_affiliate/affiliate_status_to_active`
-
-**Source:** `app/Models/User.php`
 

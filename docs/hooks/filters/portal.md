@@ -14,6 +14,7 @@ description: Filter hooks in the Portal category.
 | [`fluent_affiliate/default_share_url`](#fluent-affiliate-default-share-url) | Filters the default share URL used in affiliate tracking links when no specific page is configured. |
 | [`fluent_affiliate/parse_smart_codes`](#fluent-affiliate-parse-smart-codes) | Filters smart-code template strings before they are rendered. |
 | [`fluent_affiliate/portal_notice_html`](#fluent-affiliate-portal-notice-html) | Filters the HTML notice shown at the top of the affiliate portal. |
+| [`fluent_affiliate/portal/settings_data`](#fluent-affiliate-portal-settings-data) | Filters the affiliate portal settings screen payload — both the rendered form fields and their current values. |
 | [`fluent_affiliate/will_load_tracker_js`](#fluent-affiliate-will-load-tracker-js) | Filters whether the affiliate tracking JavaScript is enqueued on the front end. |
 | [`fluent_affiliate/portal/pending_message`](#fluent-affiliate-portal-pending-message) | Filters the HTML shown to an affiliate whose account is pending approval. |
 | [`fluent_affiliate/portal/inactive_message`](#fluent-affiliate-portal-inactive-message) | Filters the HTML shown to an affiliate whose account is inactive. |
@@ -114,6 +115,27 @@ Filters the HTML notice shown at the top of the affiliate portal.
 add_filter('fluent_affiliate/portal_notice_html', function($html) {
     return '<div class="notice notice-info">Special promotion this month!</div>';
 });
+```
+
+## `fluent_affiliate/portal/settings_data`
+
+Filters the affiliate portal settings screen payload — both the rendered form fields and their current values. Pro uses this to inject custom registration fields into the portal profile form.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$data` | `array` | Array with `form_fields` and `settings` keys. |
+| `$affiliate` | `Affiliate` | The affiliate whose portal settings are being loaded. |
+
+**Source:** `app/Http/Controllers/Portal/PortalController.php`
+
+```php
+add_filter('fluent_affiliate/portal/settings_data', function($data, $affiliate) {
+    $data['form_fields']['company'] = ['label' => 'Company', 'type' => 'text'];
+    $data['settings']['company']    = get_user_meta($affiliate->user_id, 'company', true);
+    return $data;
+}, 10, 2);
 ```
 
 ## `fluent_affiliate/will_load_tracker_js`

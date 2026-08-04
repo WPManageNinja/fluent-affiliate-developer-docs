@@ -12,13 +12,14 @@ description: Filter hooks in the Integrations category.
 | [`fluent_affiliate/get_integrations`](#fluent-affiliate-get-integrations) | Filters the array of registered integration definitions shown in Settings → Integrations. |
 | [`fluent_affiliate/get_integration_config_{integration}`](#fluent-affiliate-get-integration-config-integration) | Filters the configuration data for a specific integration. |
 | [`fluent_affiliate/save_integration_config_{integration}`](#fluent-affiliate-save-integration-config-integration) | Filters the result of saving an integration's configuration. |
+| [`fluent_affiliate/get_integration_stored_config_{integration}`](#fluent-affiliate-get-integration-stored-config-integration) | Filters an integration's stored connector config as it is read from the `_{integration}_connector_config` option. |
 | [`fluent_affiliate/get_product_cat_options_{integration}`](#fluent-affiliate-get-product-cat-options-integration) | Dynamic filter for populating the product/category options list in an integration settings form. |
 | [`fluent_affiliate/migrators`](#fluent-affiliate-migrators) | Filters the list of available data migrators in the Migration Tools. |
 | [`fluent_affiliate/get_migration_statistics`](#fluent-affiliate-get-migration-statistics) | Filters migration statistics shown in the admin migration tools. |
 | [`fluent_affiliate/get_current_data_counts`](#fluent-affiliate-get-current-data-counts) | Filters the current data counts displayed before a wipe operation. |
-| [`fluent_affiliate/advanced_report_providers`](#fluent-affiliate-advanced-report-providers) | Filters the advanced report providers available in the Reports section. |
 | [`fluent_affiliate/wppayform__defaults`](#fluent-affiliate-wppayform-defaults) | Filters the default field values pre-filled into a Paymattic affiliate registration form. |
 | [`fluent_affiliate/user_ip`](#fluent-affiliate-user-ip) | Filters the visitor IP address used for visit tracking. |
+| [`fluent_affiliate/trust_proxy_headers`](#fluent-affiliate-trust-proxy-headers) | Controls whether visit tracking trusts proxy headers (`HTTP_CF_CONNECTING_IP`, `X-Forwarded-For`) when resolving the visitor IP. |
 | [`fluent_affiliate/woo_menu_link_position`](#fluent-affiliate-woo-menu-link-position) | Filters the menu position integer for the FluentAffiliate link added to the WooCommerce My Account menu. |
 | [`fluent_affiliate/woo_menu_label`](#fluent-affiliate-woo-menu-label) | Filters the label text for the FluentAffiliate link in the WooCommerce My Account menu. |
 
@@ -82,6 +83,25 @@ add_filter('fluent_affiliate/save_integration_config_my_plugin', function($messa
     update_option('my_plugin_api_key', sanitize_text_field($config['api_key'] ?? ''));
     return ''; // return empty string = success
 }, 10, 2);
+```
+
+## `fluent_affiliate/get_integration_stored_config_{integration}`
+
+Filters an integration's stored connector config as it is read from the `_{integration}_connector_config` option. The `{integration}` segment is the integration key (e.g. `woo`, `fluent_cart`). `BaseConnectorSettings` uses this hook to merge each integration's defaults into the saved config.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$config` | `array` | Stored connector configuration for this integration. |
+
+**Source:** `app/Http/Controllers/IntegrationController.php`
+
+```php
+add_filter('fluent_affiliate/get_integration_stored_config_woo', function($config) {
+    $config['commission_type'] = $config['commission_type'] ?? 'percentage';
+    return $config;
+});
 ```
 
 ## `fluent_affiliate/get_product_cat_options_{integration}`
@@ -160,25 +180,6 @@ add_filter('fluent_affiliate/get_current_data_counts', function($counts) {
 });
 ```
 
-## `fluent_affiliate/advanced_report_providers`
-
-Filters the advanced report providers available in the Reports section.
-
-**Parameters**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `$providers` | `array` | Report provider definitions. |
-
-**Source:** `app/Http/Controllers/ReportsController.php`
-
-```php
-add_filter('fluent_affiliate/advanced_report_providers', function($providers) {
-    $providers['my_report'] = ['title' => 'My Report', 'component' => 'MyReportComponent'];
-    return $providers;
-});
-```
-
 ## `fluent_affiliate/wppayform__defaults`
 
 Filters the default field values pre-filled into a Paymattic affiliate registration form.
@@ -217,6 +218,22 @@ add_filter('fluent_affiliate/user_ip', function($ip) {
     $parts[3] = '0';
     return implode('.', $parts);
 });
+```
+
+## `fluent_affiliate/trust_proxy_headers`
+
+Controls whether visit tracking trusts proxy headers (`HTTP_CF_CONNECTING_IP`, `X-Forwarded-For`) when resolving the visitor IP. Return `false` on sites that are not behind a trusted proxy so a spoofed header cannot forge visit IPs.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$trust` | `bool` | Whether proxy headers are trusted. Default `true`. |
+
+**Source:** `app/Services/VisitService.php`
+
+```php
+add_filter('fluent_affiliate/trust_proxy_headers', '__return_false');
 ```
 
 ## `fluent_affiliate/woo_menu_link_position`

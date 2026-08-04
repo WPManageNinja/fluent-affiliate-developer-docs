@@ -67,6 +67,9 @@ const actionHookPages = [
   { text: 'Portal', link: '/hooks/actions/portal' },
   { text: 'Integrations', link: '/hooks/actions/integrations' },
   { text: 'Creatives (Pro)', link: '/hooks/actions/creatives' },
+  ...(existsSync(join(projectRoot, 'docs', 'hooks', 'actions', 'misc.md'))
+    ? [{ text: 'Miscellaneous', link: '/hooks/actions/misc' }]
+    : []),
 ]
 
 const filterHookPages = [
@@ -80,6 +83,9 @@ const filterHookPages = [
   { text: 'Auth', link: '/hooks/filters/auth' },
   { text: 'Integrations', link: '/hooks/filters/integrations' },
   { text: 'Creatives (Pro)', link: '/hooks/filters/creatives' },
+  ...(existsSync(join(projectRoot, 'docs', 'hooks', 'filters', 'misc.md'))
+    ? [{ text: 'Miscellaneous', link: '/hooks/filters/misc' }]
+    : []),
 ]
 
 function buildHooksSidebar() {
@@ -101,6 +107,7 @@ const guidePages = [
   { text: 'Guides Overview', link: '/guides/' },
   { text: 'Custom Integration', link: '/guides/custom-integration' },
   { text: 'Portal Customization', link: '/guides/portal-customization' },
+  { text: 'FluentCRM Integration', link: '/guides/fluentcrm' },
   { text: 'Code Snippets', link: '/guides/code-snippets' },
 ]
 
@@ -111,6 +118,8 @@ const proFeaturePages = [
   { text: 'Permission Manager', link: '/guides/permission-manager' },
   { text: 'Connected Sites', link: '/guides/connected-sites' },
   { text: 'Recurring Commissions', link: '/guides/recurring-commissions' },
+  { text: 'Custom Registration Fields', link: '/guides/custom-registration-fields' },
+  { text: 'Captcha', link: '/guides/captcha' },
 ]
 
 const integrationPages = [

@@ -11,7 +11,7 @@ description: Filter hooks in the Payouts category.
 |------|-------------|
 | [`fluent_affiliate/payout_form_schema`](#fluent-affiliate-payout-form-schema) | Filters the schema used to render the payout creation form in the admin. |
 | [`fluent_affiliate/payout/before_create`](#fluent-affiliate-payout-before-create) | Filters the payout data array before the payout record is created. |
-| [`fluent_affiliate/payout/before_processing`](#fluent-affiliate-payout-before-processing) | Filters the payout before it is processed. |
+| [`fluent_affiliate/payout/before_processing`](#fluent-affiliate-payout-before-processing) | Fires after the payout record is created but before referrals are processed into it. |
 
 ## `fluent_affiliate/payout_form_schema`
 
@@ -54,22 +54,22 @@ add_filter('fluent_affiliate/payout/before_create', function($payoutData, $dataC
 
 ## `fluent_affiliate/payout/before_processing`
 
-Filters the payout before it is processed. Return a `WP_Error` to halt processing.
+Fires after the payout record is created but before referrals are processed into it. Return a `WP_Error` to abort processing — the empty payout is deleted and the error is returned to the client.
 
 **Parameters**
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `$payout` | `Payout` | The Payout model. |
-| `$affiliates` | `array` | Affiliates included in the payout. |
-| `$dataConfig` | `array` | Payout configuration. |
+| `$payout` | `Payout` | The newly created (empty) payout record. |
+| `$affiliates` | `array` | Affiliates being included in the payout. |
+| `$dataConfig` | `array` | Payout configuration from the request. |
 
 **Source:** `app/Http/Controllers/PayoutController.php`
 
 ```php
 add_filter('fluent_affiliate/payout/before_processing', function($payout, $affiliates, $dataConfig) {
-    if (empty($dataConfig['method'])) {
-        return new WP_Error('missing_method', 'Payout method is required.');
+    if (count($affiliates) > 500) {
+        return new \WP_Error('too_many', 'Batch too large.');
     }
     return $payout;
 }, 10, 3);
