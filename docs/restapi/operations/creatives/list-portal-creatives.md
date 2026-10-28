@@ -11,5 +11,6 @@ aside: false
 - **Edition:** <span class="pro-badge">PRO</span>
 - **Controller:** `CreativeController@portalCreatives`
 - **Route source:** `fluent-affiliate-pro/app/Http/Routes/api.php`
+- **Access:** `UserPolicy` — Any logged-in WordPress user. The controller then checks the user's own affiliate account.
 
 <OAOperation operationId="listPortalCreatives" specUrl="/openapi/public/creatives/list-portal-creatives.json" />

@@ -44,7 +44,11 @@
     "delete-payout-transaction",
     "update-payout-transaction",
     "bulk-update-payout-transactions",
-    "update-payout"
+    "update-payout",
+    "send-paypal-payout",
+    "sync-paypal-payout",
+    "recover-paypal-batch",
+    "mark-paypal-payout-not-sent"
   ],
   "visits": [
     "list-visits",
@@ -71,11 +75,11 @@
     "list-migrations",
     "start-migration",
     "get-migration-status",
-    "wipe-data",
     "get-migration-statistics",
     "get-affiliate-options",
     "get-user-options",
     "get-registration-fields",
+    "wipe-data",
     "get-affiliate-group-options",
     "update-registration-fields",
     "get-captcha-settings",
@@ -83,9 +87,15 @@
     "validate-captcha-keys",
     "list-managers",
     "update-managers",
-    "delete-manager"
+    "delete-manager",
+    "get-paypal-settings",
+    "update-paypal-settings",
+    "delete-paypal-settings",
+    "test-paypal-connection",
+    "register-paypal-webhook"
   ],
   "portal": [
+    "get-portal-bootstrap",
     "get-portal-stats",
     "list-portal-referrals",
     "list-portal-transactions",

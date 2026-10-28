@@ -18,8 +18,12 @@ description: Filter hooks in the Integrations category.
 | [`fluent_affiliate/get_migration_statistics`](#fluent-affiliate-get-migration-statistics) | Filters migration statistics shown in the admin migration tools. |
 | [`fluent_affiliate/get_current_data_counts`](#fluent-affiliate-get-current-data-counts) | Filters the current data counts displayed before a wipe operation. |
 | [`fluent_affiliate/wppayform__defaults`](#fluent-affiliate-wppayform-defaults) | Filters the default field values pre-filled into a Paymattic affiliate registration form. |
+| [`fluent_affiliate/visit_flood_limit`](#fluent-affiliate-visit-flood-limit) | Filters how many visits one IP address can record in one hour. |
+| [`fluent_affiliate/visit_dedup_window`](#fluent-affiliate-visit-dedup-window) | Filters the time window, in seconds, in which a repeat visit from the same IP address for the same affiliate is not recorded again. |
 | [`fluent_affiliate/user_ip`](#fluent-affiliate-user-ip) | Filters the visitor IP address used for visit tracking. |
-| [`fluent_affiliate/trust_proxy_headers`](#fluent-affiliate-trust-proxy-headers) | Controls whether visit tracking trusts proxy headers (`HTTP_CF_CONNECTING_IP`, `X-Forwarded-For`) when resolving the visitor IP. |
+| [`fluent_affiliate/trust_proxy_headers`](#fluent-affiliate-trust-proxy-headers) | Controls whether visit tracking trusts the `X-Forwarded-For` header from the proxies listed in `fluent_affiliate/trusted_proxies` when resolving the visitor IP. |
+| [`fluent_affiliate/trusted_proxies`](#fluent-affiliate-trusted-proxies) | Filters the proxy IP addresses whose `X-Forwarded-For` header is trusted when the visitor IP is resolved. |
+| [`fluent_affiliate/md_ingest_limit`](#fluent-affiliate-md-ingest-limit) | Filters how many visit rows one connected site can send to the multi-domain tracking endpoint in one minute <span class="pro-badge">PRO</span>. |
 | [`fluent_affiliate/woo_menu_link_position`](#fluent-affiliate-woo-menu-link-position) | Filters the menu position integer for the FluentAffiliate link added to the WooCommerce My Account menu. |
 | [`fluent_affiliate/woo_menu_label`](#fluent-affiliate-woo-menu-label) | Filters the label text for the FluentAffiliate link in the WooCommerce My Account menu. |
 
@@ -199,6 +203,42 @@ add_filter('fluent_affiliate/wppayform__defaults', function($fields, $formId) {
 }, 10, 2);
 ```
 
+## `fluent_affiliate/visit_flood_limit`
+
+Filters how many visits one IP address can record in one hour. When an IP reaches the limit, more visits from it are not recorded. Return `0` or less to turn off the limit.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$limit` | `int` | Maximum visits per IP per hour. Default `100`. |
+
+**Source:** `app/Services/VisitService.php`
+
+```php
+add_filter('fluent_affiliate/visit_flood_limit', function($limit) {
+    return 500; // busy shared IPs, e.g. office NAT
+});
+```
+
+## `fluent_affiliate/visit_dedup_window`
+
+Filters the time window, in seconds, in which a repeat visit from the same IP address for the same affiliate is not recorded again. Return `0` to record every visit.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$seconds` | `int` | Window length in seconds. Default `1800` (30 minutes). |
+
+**Source:** `app/Services/VisitService.php`
+
+```php
+add_filter('fluent_affiliate/visit_dedup_window', function($seconds) {
+    return HOUR_IN_SECONDS;
+});
+```
+
 ## `fluent_affiliate/user_ip`
 
 Filters the visitor IP address used for visit tracking.
@@ -222,7 +262,7 @@ add_filter('fluent_affiliate/user_ip', function($ip) {
 
 ## `fluent_affiliate/trust_proxy_headers`
 
-Controls whether visit tracking trusts proxy headers (`HTTP_CF_CONNECTING_IP`, `X-Forwarded-For`) when resolving the visitor IP. Return `false` on sites that are not behind a trusted proxy so a spoofed header cannot forge visit IPs.
+Controls whether visit tracking trusts the `X-Forwarded-For` header from the proxies listed in `fluent_affiliate/trusted_proxies` when resolving the visitor IP. Return `false` on sites that are not behind a trusted proxy. `CF-Connecting-IP` is not affected: it is used only when `REMOTE_ADDR` is a Cloudflare IP.
 
 **Parameters**
 
@@ -234,6 +274,45 @@ Controls whether visit tracking trusts proxy headers (`HTTP_CF_CONNECTING_IP`, `
 
 ```php
 add_filter('fluent_affiliate/trust_proxy_headers', '__return_false');
+```
+
+## `fluent_affiliate/trusted_proxies`
+
+Filters the proxy IP addresses whose `X-Forwarded-For` header is trusted when the visitor IP is resolved. For a trusted proxy, the right-most hop is used, because only that hop is written by the proxy. A request from any other `REMOTE_ADDR` uses `REMOTE_ADDR` as is. Has no effect when `fluent_affiliate/trust_proxy_headers` returns `false`.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$proxies` | `array` | Trusted proxy IPs. Default `['127.0.0.1']`. |
+
+**Source:** `app/Services/VisitService.php`
+
+```php
+add_filter('fluent_affiliate/trusted_proxies', function($proxies) {
+    $proxies[] = '10.0.0.5'; // your load balancer
+    return $proxies;
+});
+```
+
+## `fluent_affiliate/md_ingest_limit`
+
+Filters how many visit rows one connected site can send to the multi-domain tracking endpoint in one minute <span class="pro-badge">PRO</span>. Requests above the limit get HTTP `429`.
+
+> **Requires FluentAffiliate Pro.**
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$limit` | `int` | Maximum rows per connected site per minute. Default `300`. |
+
+**Source:** `../fluent-affiliate-pro/app/Hooks/Handlers/MultiDomainTranckerHandler.php`
+
+```php
+add_filter('fluent_affiliate/md_ingest_limit', function($limit) {
+    return 1000;
+});
 ```
 
 ## `fluent_affiliate/woo_menu_link_position`

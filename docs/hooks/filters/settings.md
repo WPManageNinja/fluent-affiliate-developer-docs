@@ -18,7 +18,7 @@ description: Filter hooks in the Settings category.
 | [`fluent_affiliate/max_execution_time`](#fluent-affiliate-max-execution-time) | Filters the maximum execution time (seconds) for long-running background jobs. |
 | [`fluent_affiliate/pro_upgrade_base_url`](#fluent-affiliate-pro-upgrade-base-url) | Filters the base URL used for "Upgrade to Pro" links before UTM parameters are appended. |
 | [`fluent_affiliate/is_rtl`](#fluent-affiliate-is-rtl) | Filters whether RTL (right-to-left) mode is active for the affiliate portal. |
-| [`fluent_affiliate_base_url`](#fluent-affiliate-base-url) | Filters the base admin URL the admin SPA builds its links from (`admin. |
+| [`fluent_affiliate_base_url`](#fluent-affiliate-base-url) | Filters the base admin URL the admin SPA builds its links from (`admin.php?page=fluent-affiliate#`). |
 | [`fluent_affiliate/admin_menu_title`](#fluent-affiliate-admin-menu-title) | Filters the FluentAffiliate top-level WordPress admin menu title. |
 | [`fluent_affiliate/top_menu_items`](#fluent-affiliate-top-menu-items) | Filters the top navigation items in the FluentAffiliate admin. |
 | [`fluent_affiliate/right_menu_items`](#fluent-affiliate-right-menu-items) | Filters the right-side navigation items in the admin header. |
@@ -33,7 +33,8 @@ description: Filter hooks in the Settings category.
 | [`fluent_affiliate/update_feature_settings_{featureKey}`](#fluent-affiliate-update-feature-settings-featurekey) | Filters (and may validate) a feature module's settings payload before it is saved. |
 | [`fluent_affiliate/update_feature_response_{featureKey}`](#fluent-affiliate-update-feature-response-featurekey) | Filters the response after a feature's settings are updated. |
 | [`fluent_affiliate_tracker_vars`](#fluent-affiliate-tracker-vars) | Filters the JS variables localized for the public visit tracker script — cookie duration, referral query parameter, extra tracked query params, last-referrer credit, and the AJAX endpoint. |
-| [`fluent_affiliate/currencies`](#fluent-affiliate-currencies) | Filters the full currency catalogue loaded from `config/currency. |
+| [`fluent_affiliate/currencies`](#fluent-affiliate-currencies) | Filters the full currency catalogue loaded from `config/currency.php` — the `names` map (currency code => label) and the `symbols` map (currency code => symbol). |
+| [`fluent_affiliate/license_grace_period_days`](#fluent-affiliate-license-grace-period-days) | Filters the number of days Pro stays active after a valid license expires <span class="pro-badge">PRO</span>. |
 | [`fluent_affiliate/social_media_links`](#fluent-affiliate-social-media-links) | Filters the array of social media platform definitions shown in the affiliate portal share widget. |
 | [`fluent_affiliate/social_media_share_default_enabled_keys`](#fluent-affiliate-social-media-share-default-enabled-keys) | Filters the list of social platform keys that are enabled by default (when no custom configuration has been saved). |
 
@@ -504,6 +505,26 @@ add_filter('fluent_affiliate/currencies', function($currencies) {
     $currencies['symbols']['XYZ'] = 'X';
 
     return $currencies;
+});
+```
+
+## `fluent_affiliate/license_grace_period_days`
+
+Filters the number of days Pro stays active after a valid license expires <span class="pro-badge">PRO</span>. Used only when the license server does not send its own grace period. Return `0` to turn off the grace period.
+
+> **Requires FluentAffiliate Pro.**
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$days` | `int` | Grace period in days. Default `15`. |
+
+**Source:** `../fluent-affiliate-pro/app/Http/Controllers/LicenseController.php`
+
+```php
+add_filter('fluent_affiliate/license_grace_period_days', function($days) {
+    return 0;
 });
 ```
 

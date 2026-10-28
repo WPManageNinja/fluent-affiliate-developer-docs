@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `PayoutController@getReferrals`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `PayoutPolicy` — checked by `PayoutPolicy::getReferrals()`.
 
 <OAOperation operationId="listPayoutReferrals" specUrl="/openapi/public/payouts/list-payout-referrals.json" />

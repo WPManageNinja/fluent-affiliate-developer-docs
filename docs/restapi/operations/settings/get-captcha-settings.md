@@ -11,5 +11,6 @@ aside: false
 - **Edition:** <span class="pro-badge">PRO</span>
 - **Controller:** `ProSettingController@getCaptchaSettings`
 - **Route source:** `fluent-affiliate-pro/app/Http/Routes/api.php`
+- **Access:** `AdminPolicy` — `manage_options` or the `manage_all_data` permission.
 
 <OAOperation operationId="getCaptchaSettings" specUrl="/openapi/public/settings/get-captcha-settings.json" />

@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `IntegrationController@index`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `AdminPolicy` — `manage_options` or the `manage_all_data` permission.
 
 <OAOperation operationId="listIntegrations" specUrl="/openapi/public/settings/list-integrations.json" />

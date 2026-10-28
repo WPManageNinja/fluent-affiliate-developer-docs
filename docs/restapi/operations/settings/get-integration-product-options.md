@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `IntegrationController@getCustomAffiliateOptions`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `AdminPolicy` — `manage_options` or the `manage_all_data` permission.
 
 <OAOperation operationId="getIntegrationProductOptions" specUrl="/openapi/public/settings/get-integration-product-options.json" />

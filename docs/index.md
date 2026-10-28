@@ -9,4 +9,4 @@ editLink: false
 pageClass: docs-home
 ---
 
-<DocsHome :stats="{ models: 10, routes: 102, hooks: 130, tables: 8, openapiSpecs: 102 }" />
+<DocsHome />

@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `PayoutController@patchTransaction`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `PayoutPolicy` — `manage_options`, or `manage_all_payouts` or `manage_all_data`.
 
 <OAOperation operationId="updatePayoutTransaction" specUrl="/openapi/public/payouts/update-payout-transaction.json" />

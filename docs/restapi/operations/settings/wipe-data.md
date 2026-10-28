@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `MigrationController@wipeCurrentData`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `SuperAdminPolicy` — WordPress administrators only (`manage_options`). Not delegable.
 
 <OAOperation operationId="wipeData" specUrl="/openapi/public/settings/wipe-data.json" />

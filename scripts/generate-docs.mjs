@@ -225,6 +225,9 @@ function extractHooks(sourceDirs) {
   const actions = {}   // hook => { files, isPro, isDynamic }
   const filters = {}
 
+  // The core slug ('fluent-affiliate') prefixes a few hooks fired as $this->slug . '...'
+  const appSlug = (readFile(join(coreRoot, 'config', 'app.php')).match(/'slug'\s*=>\s*'([^']+)'/) ?? [])[1]
+
   for (const dir of sourceDirs) {
     const isPro = dir.includes('fluent-affiliate-pro')
     for (const file of scanPhpFiles(dir)) {
@@ -232,29 +235,39 @@ function extractHooks(sourceDirs) {
       const rel     = relative(coreRoot, file)
 
       // Static action hooks (not followed by string concatenation ` . $`)
-      for (const [, hook] of content.matchAll(/(?:do_action|->doAction)\s*\(\s*'(fluent_affiliate[/_][^']+)'(?!\s*\.)/g)) {
+      for (const [, hook] of content.matchAll(/(?:do_action|->doAction)\s*\(\s*['"](fluent_affiliate[/_][^'"]+)['"](?!\s*\.)/g)) {
         if (!actions[hook]) actions[hook] = { files: [], isPro, isDynamic: false }
         if (!actions[hook].files.includes(rel)) actions[hook].files.push(rel)
       }
 
       // Dynamic action hooks  e.g.  'fluent_affiliate/foo_' . $var  or  'fluent_affiliate_foo_' . $var . '_bar'
       for (const [, base, varName, tail] of content.matchAll(
-        /(?:do_action|->doAction)\s*\(\s*'(fluent_affiliate[/_][^']+)'\s*\.\s*\$(\w+)(?:(?:->\w+|\[[^\]]*\])*\s*\.\s*'([^']+)')?/g,
+        /(?:do_action|->doAction)\s*\(\s*['"](fluent_affiliate[/_][^'"]+)['"]\s*\.\s*\$(\w+)(?:(?:->\w+|\[[^\]]*\])*\s*\.\s*['"]([^'"]+)['"])?/g,
       )) {
         const hook = base + `{${varName}}` + (tail ?? '')
         if (!actions[hook]) actions[hook] = { files: [], isPro, isDynamic: true }
         if (!actions[hook].files.includes(rel)) actions[hook].files.push(rel)
       }
 
+      // Slug-prefixed action hooks  e.g.  do_action($this->slug . '_loading_app')  where the
+      // class reads $this->slug from config('app.slug') — resolve the slug to its literal value.
+      if (appSlug && !isPro && /app\.slug/.test(content)) {
+        for (const [, tail] of content.matchAll(/(?:do_action|->doAction)\s*\(\s*\$this->slug\s*\.\s*['"]([^'"]+)['"]/g)) {
+          const hook = appSlug + tail
+          if (!actions[hook]) actions[hook] = { files: [], isPro, isDynamic: false }
+          if (!actions[hook].files.includes(rel)) actions[hook].files.push(rel)
+        }
+      }
+
       // Static filter hooks (not followed by string concatenation ` . $`)
-      for (const [, hook] of content.matchAll(/(?:apply_filters|->applyFilters)\s*\(\s*'(fluent_affiliate[/_][^']+)'(?!\s*\.)/g)) {
+      for (const [, hook] of content.matchAll(/(?:apply_filters|->applyFilters)\s*\(\s*['"](fluent_affiliate[/_][^'"]+)['"](?!\s*\.)/g)) {
         if (!filters[hook]) filters[hook] = { files: [], isPro, isDynamic: false }
         if (!filters[hook].files.includes(rel)) filters[hook].files.push(rel)
       }
 
       // Dynamic filter hooks  e.g.  'fluent_affiliate/foo_' . $var  or  'fluent_affiliate_foo_' . $var . '_bar'
       for (const [, base, varName, tail] of content.matchAll(
-        /(?:apply_filters|->applyFilters)\s*\(\s*'(fluent_affiliate[/_][^']+)'\s*\.\s*\$(\w+)(?:(?:->\w+|\[[^\]]*\])*\s*\.\s*'([^']+)')?/g,
+        /(?:apply_filters|->applyFilters)\s*\(\s*['"](fluent_affiliate[/_][^'"]+)['"]\s*\.\s*\$(\w+)(?:(?:->\w+|\[[^\]]*\])*\s*\.\s*['"]([^'"]+)['"])?/g,
       )) {
         const hook = base + `{${varName}}` + (tail ?? '')
         if (!filters[hook]) filters[hook] = { files: [], isPro, isDynamic: true }
@@ -1642,7 +1655,7 @@ add_filter('fluent_affiliate/get_product_cat_options_woo', function($options) {
 add_filter('fluent_affiliate/recaptcha_remoteip', '__return_empty_string');`,
   },
   'fluent_affiliate/trust_proxy_headers': {
-    desc: 'Controls whether visit tracking trusts proxy headers (`HTTP_CF_CONNECTING_IP`, `X-Forwarded-For`) when resolving the visitor IP. Return `false` on sites that are not behind a trusted proxy so a spoofed header cannot forge visit IPs.',
+    desc: 'Controls whether visit tracking trusts the `X-Forwarded-For` header from the proxies listed in `fluent_affiliate/trusted_proxies` when resolving the visitor IP. Return `false` on sites that are not behind a trusted proxy. `CF-Connecting-IP` is not affected: it is used only when `REMOTE_ADDR` is a Cloudflare IP.',
     params: [
       { name: '$trust', type: 'bool', desc: 'Whether proxy headers are trusted. Default `true`.' },
     ],
@@ -1777,6 +1790,193 @@ add_filter('fluent_affiliate/recaptcha_remoteip', '__return_empty_string');`,
     }
     return $commissionData;
 }, 10, 2);`,
+  },
+
+  // --- Admin app ---
+  'fluent-affiliate_loading_app': {
+    desc: 'Fired while the admin SPA assets are enqueued, after the admin stylesheets and before the admin app script. Use it to enqueue your own scripts or styles that extend the FluentAffiliate admin app. The `fluent-affiliate` prefix is the plugin slug from `config/app.php`.',
+    params: [],
+    example: `add_action('fluent-affiliate_loading_app', function() {
+    wp_enqueue_script('my-fa-addon', plugins_url('admin.js', __FILE__), [], '1.0.0', true);
+});`,
+  },
+
+  // --- Auth / registration ---
+  'fluent_affiliate/allowed_signup_roles': {
+    desc: 'Filters the WordPress roles a new user may request on the affiliate registration form. A requested `user_role` that is not in this list is ignored, and the user gets the site\'s `default_role` instead.',
+    params: [
+      { name: '$roles', type: 'array', desc: 'Allowed role slugs. Default `[\'subscriber\']`.' },
+    ],
+    example: `add_filter('fluent_affiliate/allowed_signup_roles', function($roles) {
+    $roles[] = 'customer';
+    return $roles;
+});`,
+  },
+  'fluent_affiliate/auth/allowed_sanitize_callbacks': {
+    desc: 'Filters the sanitize callbacks a registration field may declare in its `sanitize_callback` key. A callback that is not in this list falls back to `sanitize_text_field`, so a field config cannot run an arbitrary function.',
+    params: [
+      { name: '$callbacks', type: 'array', desc: 'Allowed callback names. Default `sanitize_text_field`, `sanitize_textarea_field`, `sanitize_email`, `sanitize_url`, `sanitize_user`.' },
+    ],
+    example: `add_filter('fluent_affiliate/auth/allowed_sanitize_callbacks', function($callbacks) {
+    $callbacks[] = 'sanitize_key';
+    return $callbacks;
+});`,
+  },
+  'fluent_affiliate/auth/max_verification_attempts': {
+    desc: 'Filters how many wrong email verification codes a visitor may enter during registration. When the limit is reached, the challenge is deleted and the visitor must start the registration again.',
+    params: [
+      { name: '$maxAttempts', type: 'int', desc: 'Maximum attempts. Default `5`.' },
+    ],
+    example: `add_filter('fluent_affiliate/auth/max_verification_attempts', function($maxAttempts) {
+    return 3;
+});`,
+  },
+  'fluent_affiliate/auth/signup_verification_mail_subject': {
+    desc: 'Filters the subject of the email that sends the registration verification code.',
+    params: [
+      { name: '$subject', type: 'string', desc: 'Default `Your registration verification code for {site title}`.' },
+    ],
+    example: `add_filter('fluent_affiliate/auth/signup_verification_mail_subject', function($subject) {
+    return 'Confirm your partner account';
+});`,
+  },
+  'fluent_affiliate/reserved_registration_field_names': {
+    desc: 'Filters the field names that a custom registration field cannot use <span class="pro-badge">PRO</span>. These names belong to the built-in registration fields, so a custom field with one of them is rejected.',
+    params: [
+      { name: '$names', type: 'array', desc: 'Reserved names: `full_name`, `email`, `username`, `password`, `conf_password`, `raw_html`, `note`, `url`, `terms_condition`, `bank_details`, `payment_email`.' },
+    ],
+    example: `add_filter('fluent_affiliate/reserved_registration_field_names', function($names) {
+    $names[] = 'tax_id'; // keep this name for your own field
+    return $names;
+});`,
+  },
+
+  // --- Referrals ---
+  'fluent_affiliate/ignore_zero_total_referral': {
+    desc: 'Filters whether a referral is discarded when the order total is zero or less. This check is separate from `fluent_affiliate/ignore_zero_amount_referral`: a flat-rate commission ignores the order total, so a free order would otherwise still pay the full flat amount. Applies to `sale`, `recurring_sale`, `lifetime_sale` and `payment` referrals.',
+    params: [
+      { name: '$ignore', type: 'bool',  desc: 'Whether to discard the referral. Default `true`.' },
+      { name: '$data',   type: 'array', desc: 'Referral data about to be saved, including `order_total`.' },
+    ],
+    example: `// Pay the flat commission on free orders too
+add_filter('fluent_affiliate/ignore_zero_total_referral', '__return_false');`,
+  },
+
+  // --- Payouts ---
+  'fluent_affiliate/payout_methods': {
+    desc: 'Registers the payout methods an admin can select when creating a payout, keyed by slug. `manual` is always present, even if a callback removes it. Any other key is a gateway method: its payouts keep their referrals and transactions in `processing` until the gateway settles them. Pro adds `paypal_payouts` here when the referral setting `payout_method` is `paypal` and the PayPal keys for the active mode are saved. An unknown method on a payout falls back to `manual`.',
+    params: [
+      { name: '$methods', type: 'array', desc: 'Method labels keyed by slug. Default `[\'manual\' => \'Manual\']`.' },
+    ],
+    example: `add_filter('fluent_affiliate/payout_methods', function($methods) {
+    $methods['wise'] = __('Wise', 'my-plugin');
+    return $methods;
+});`,
+  },
+  'fluent_affiliate/payout/details': {
+    desc: 'Filters the payout returned by `GET /payouts/{id}`. A payout gateway uses it to add state that only the server can decide, such as which actions the admin can take next. Pro adds `paypal_can_send_again` to PayPal payouts.',
+    params: [
+      { name: '$payout', type: 'Payout', desc: 'The Payout model, with `creator`, `referrals_count`, `transactions_count`, `processing_count` and `processing_amount` set.' },
+    ],
+    example: `add_filter('fluent_affiliate/payout/details', function($payout) {
+    if (($payout->settings['payout_method'] ?? '') === 'wise') {
+        $payout->wise_batch_url = 'https://wise.com/...';
+    }
+    return $payout;
+});`,
+  },
+  'fluent_affiliate/payout/validated_config': {
+    desc: 'Filters the validated payout configuration. The same filter serves the review preview (`POST /payouts/validate-payout-config`) and `POST /payouts/process-payout`, so a gateway can remove affiliates it cannot pay from both. Pro uses it to skip PayPal payees without a valid payment email and reports them under `skipped`.',
+    params: [
+      { name: '$validated', type: 'array', desc: '`payable_affiliates` (Collection), `payable_total_amount` (float), `held`, and `config` (`start_date`, `end_date`, `min_payout`, `affiliate_ids`, `payout_method`, `ignore_holding_period`).' },
+      { name: '$config',    type: 'array', desc: 'The raw payout config from the request.' },
+    ],
+    example: `add_filter('fluent_affiliate/payout/validated_config', function($validated, $config) {
+    if ($validated['config']['payout_method'] !== 'wise') {
+        return $validated;
+    }
+
+    $payable = $validated['payable_affiliates']->filter(function($affiliate) {
+        return !empty($affiliate->settings['wise_email']);
+    })->values();
+
+    $validated['payable_affiliates']   = $payable->isEmpty() ? [] : $payable;
+    $validated['payable_total_amount'] = $payable->sum('total_payable_amount');
+
+    return $validated;
+}, 10, 2);`,
+  },
+
+  // --- Smart codes ---
+  'fluent_affiliate/smartcode_user_allowed_keys': {
+    desc: 'Filters the WordPress user fields that the `user.*` smart codes (for example `user.first_name`) can read. A key that is not in this list renders the fallback value. The list is closed by default because `WP_User::get()` can read any users column and any user meta, including the password hash.',
+    params: [
+      { name: '$keys', type: 'array', desc: 'Allowed keys. Default `ID`, `first_name`, `last_name`, `display_name`, `user_email`, `user_login`, `user_url`.' },
+    ],
+    example: `add_filter('fluent_affiliate/smartcode_user_allowed_keys', function($keys) {
+    $keys[] = 'nickname';
+    return $keys;
+});`,
+  },
+  'fluent_affiliate/smartcode_user_allowed_meta_keys': {
+    desc: 'Filters the user meta keys that the `user.meta.*` smart codes (for example `user.meta.billing_company`) can read. The list is empty by default, so no meta key renders until a site adds it. User meta can hold session tokens, application passwords and secrets of other plugins, so add only keys that are safe to show in emails.',
+    params: [
+      { name: '$metaKeys', type: 'array', desc: 'Allowed meta keys. Default `[]`.' },
+    ],
+    example: `add_filter('fluent_affiliate/smartcode_user_allowed_meta_keys', function($metaKeys) {
+    $metaKeys[] = 'billing_company';
+    return $metaKeys;
+});`,
+  },
+
+  // --- Visit tracking ---
+  'fluent_affiliate/visit_flood_limit': {
+    desc: 'Filters how many visits one IP address can record in one hour. When an IP reaches the limit, more visits from it are not recorded. Return `0` or less to turn off the limit.',
+    params: [
+      { name: '$limit', type: 'int', desc: 'Maximum visits per IP per hour. Default `100`.' },
+    ],
+    example: `add_filter('fluent_affiliate/visit_flood_limit', function($limit) {
+    return 500; // busy shared IPs, e.g. office NAT
+});`,
+  },
+  'fluent_affiliate/visit_dedup_window': {
+    desc: 'Filters the time window, in seconds, in which a repeat visit from the same IP address for the same affiliate is not recorded again. Return `0` to record every visit.',
+    params: [
+      { name: '$seconds', type: 'int', desc: 'Window length in seconds. Default `1800` (30 minutes).' },
+    ],
+    example: `add_filter('fluent_affiliate/visit_dedup_window', function($seconds) {
+    return HOUR_IN_SECONDS;
+});`,
+  },
+  'fluent_affiliate/trusted_proxies': {
+    desc: 'Filters the proxy IP addresses whose `X-Forwarded-For` header is trusted when the visitor IP is resolved. For a trusted proxy, the right-most hop is used, because only that hop is written by the proxy. A request from any other `REMOTE_ADDR` uses `REMOTE_ADDR` as is. Has no effect when `fluent_affiliate/trust_proxy_headers` returns `false`.',
+    params: [
+      { name: '$proxies', type: 'array', desc: 'Trusted proxy IPs. Default `[\'127.0.0.1\']`.' },
+    ],
+    example: `add_filter('fluent_affiliate/trusted_proxies', function($proxies) {
+    $proxies[] = '10.0.0.5'; // your load balancer
+    return $proxies;
+});`,
+  },
+  'fluent_affiliate/md_ingest_limit': {
+    desc: 'Filters how many visit rows one connected site can send to the multi-domain tracking endpoint in one minute <span class="pro-badge">PRO</span>. Requests above the limit get HTTP `429`.',
+    params: [
+      { name: '$limit', type: 'int', desc: 'Maximum rows per connected site per minute. Default `300`.' },
+    ],
+    example: `add_filter('fluent_affiliate/md_ingest_limit', function($limit) {
+    return 1000;
+});`,
+  },
+
+  // --- License ---
+  'fluent_affiliate/license_grace_period_days': {
+    desc: 'Filters the number of days Pro stays active after a valid license expires <span class="pro-badge">PRO</span>. Used only when the license server does not send its own grace period. Return `0` to turn off the grace period.',
+    params: [
+      { name: '$days', type: 'int', desc: 'Grace period in days. Default `15`.' },
+    ],
+    example: `add_filter('fluent_affiliate/license_grace_period_days', function($days) {
+    return 0;
+});`,
   },
 }
 
@@ -2213,6 +2413,20 @@ function categoriseHook(hook, categories) {
   return null
 }
 
+// First sentence of a description for the index tables. A period inside inline
+// code (`Foo::bar()`, `user.first_name`), one not followed by whitespace (0.5), or
+// an abbreviation (e.g., i.e., etc.) does not end the sentence.
+function firstSentence(text) {
+  let inCode = false
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === '`') inCode = !inCode
+    else if (!inCode && text[i] === '.' && (i === text.length - 1 || /\s/.test(text[i + 1])) && !/\b(?:e\.g|i\.e|etc)$/.test(text.slice(0, i))) {
+      return text.slice(0, i + 1)
+    }
+  }
+  return text
+}
+
 function hookAnchor(hook) {
   // Match VitePress anchor generation: /, _, {, }, . all become -, collapse multiples, lowercase
   return hook
@@ -2289,7 +2503,7 @@ function buildHookCategoryDoc(title, hooks, hookMap, type) {
 
   for (const hook of hooks) {
     const doc  = HOOK_DOCS[hook]
-    const desc = doc?.desc ? doc.desc.split('.')[0] + '.' : 'See source.'
+    const desc = doc?.desc ? firstSentence(doc.desc) : 'See source.'
     lines.push(`| [\`${hook}\`](#${hookAnchor(hook)}) | ${desc} |`)
   }
 
@@ -2448,7 +2662,7 @@ const REST_DESCRIPTIONS = {
   'GET /payouts/{id}':            'Retrieve a single payout.',
   'GET /payouts/{id}/referrals':  'List referrals included in a payout.',
   'GET /payouts/{id}/transactions': 'List transactions in a payout.',
-  'GET /payouts/{id}/transactions-export': 'Export payout transactions as CSV.',
+  'GET /payouts/{id}/transactions-export': 'Export payout transactions as CSV rows. Pass `format=paypal` to get the rows for a PayPal Payouts upload file instead (`email`, `amount`, `currency`), with the amount formatted for the payout currency (decimal comma for EUR and BRL). A payout sent through a payment gateway cannot be exported in the PayPal format.',
   'DELETE /payouts/{id}/transactions/{transaction_id}': 'Delete a payout transaction.',
   'PATCH /payouts/{id}/transactions/{transaction_id}': 'Update a payout transaction.',
   'PATCH /payouts/{id}/transactions/bulk-action': 'Bulk update payout transactions.',
@@ -2533,6 +2747,22 @@ const REST_DESCRIPTIONS = {
   'GET /settings/managers':                 'List affiliate managers.',
   'POST /settings/managers':               'Add or update an affiliate manager.',
   'DELETE /settings/managers/{id}':        'Remove an affiliate manager.',
+
+  // Pro: PayPal Payouts settings
+  'GET /settings/paypal-payouts':          'Get the PayPal Payouts settings and the webhook URL to register at PayPal. Client secrets are returned masked.',
+  'POST /settings/paypal-payouts':         'Save the PayPal Payouts settings (`settings.mode` and the `test_*` / `live_*` client ID and secret). Changed key pairs are checked with PayPal before anything is saved. A webhook is registered for each configured mode that does not have one; problems are returned in `notices`. Send the masked secret back unchanged to keep the stored secret.',
+  'DELETE /settings/paypal-payouts':       'Remove the PayPal keys. The registered webhooks are removed at PayPal first; the keys are removed even when PayPal cannot be reached.',
+  'POST /settings/paypal-payouts/test':    'Test the saved keys for a mode (`mode`: `test` or `live`) by requesting an access token from PayPal.',
+  'POST /settings/paypal-payouts/webhook': 'Register the webhook at PayPal for a mode (`mode`: `test` or `live`) and save its ID. Without a webhook, payout results arrive with the hourly check.',
+
+  // Pro: PayPal Payouts actions
+  'POST /payouts/{id}/paypal-send':     'Queue a PayPal payout for sending. Only the transactions in `processing` status are sent, in one PayPal batch (15,000 items at most, one currency). The payout moves to `sending`, so a double request sends it once. Rejected when the payout was already sent, or when PayPal may already have it (use `paypal-batch` then).',
+  'POST /payouts/{id}/paypal-sync':     'Read the payout batch from PayPal and settle each transaction from it. The webhook and the hourly job call the same sync.',
+  'POST /payouts/{id}/paypal-batch':    'Recover a lost PayPal batch: save the PayPal `batch_id` and settle the transactions from it. The batch must carry this payout\'s sender batch ID.',
+  'POST /payouts/{id}/paypal-not-sent': 'Mark an unconfirmed PayPal payout as not sent, after the admin checked that the payout is not in the PayPal account. Its open transactions become `failed`, so they can be paid by hand or removed.',
+
+  // Portal
+  'GET /portal/bootstrap':              'Get the data the affiliate portal app boots with: site info and the affiliate\'s share link parameters, additional sites, translated strings, the user, branded coupons, currency, menu items, QR code settings and date format. Only for an `active` affiliate. Filtered by `fluent_affiliate/portal_localize_data`.',
 }
 
 // ---------------------------------------------------------------------------
@@ -2579,7 +2809,7 @@ const REST_MODULE_META = {
   settings: {
     title: 'Settings API',
     description: 'Email configuration, feature settings, integrations, referral config, page management, migrations, registration fields, captcha, and affiliate managers.',
-    auth: 'All settings routes are protected by `AdminPolicy` and require WordPress administrator access.',
+    auth: 'Settings routes are protected by `AdminPolicy` (`manage_options` or the `manage_all_data` permission). Routes that control money or access — migrations wipe, license, affiliate managers and PayPal Payouts keys — use `SuperAdminPolicy` and need `manage_options`. Each operation page lists its policy.',
     isPro: false,
   },
   groups: {
@@ -2623,6 +2853,7 @@ function humanizeSlug(value) {
     .replace(/\bcsv\b/gi, 'CSV')
     .replace(/\bcrm\b/gi, 'CRM')
     .replace(/\bwp\b/gi, 'WP')
+    .replace(/\bpaypal\b/gi, 'PayPal')
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/\b\w/g, (match) => match.toUpperCase())
@@ -2666,16 +2897,31 @@ function renderSourceLabel(isPro) {
   return isPro ? '<span class="pro-badge">PRO</span>' : 'Core'
 }
 
-function policyAuth(policy) {
+// What each policy's verifyRequest() allows. `manage_options` users pass every
+// PermissionManager check; the rest are FluentAffiliate permissions (fa_meta).
+function policyAuth(policy, method) {
+  const read = method === 'GET'
   const map = {
-    AdminPolicy:     'WordPress administrator (`manage_options`)',
-    AffiliatePolicy: 'Admin or affiliate with `read_all_affiliates` capability',
-    ReferralPolicy:  'Admin or affiliate with `read_all_referrals` capability',
-    PayoutPolicy:    'Admin or affiliate with `read_all_payouts` capability',
-    VisitPolicy:     'Admin or affiliate with `read_all_visits` capability',
-    UserPolicy:      'Any authenticated WordPress user',
+    SuperAdminPolicy: 'WordPress administrators only (`manage_options`). Not delegable.',
+    AdminPolicy:      '`manage_options` or the `manage_all_data` permission.',
+    AffiliatePolicy:  read ? '`manage_options`, or `read_all_affiliates`, `manage_all_affiliates` or `manage_all_data`.' : '`manage_options`, or `manage_all_affiliates` or `manage_all_data`.',
+    ReferralPolicy:   read ? '`manage_options`, or `read_all_referrals`, `manage_all_referrals` or `manage_all_data`.' : '`manage_options`, or `manage_all_referrals` or `manage_all_data`.',
+    PayoutPolicy:     read ? '`manage_options`, or `read_all_payouts`, `manage_all_payouts` or `manage_all_data`.' : '`manage_options`, or `manage_all_payouts` or `manage_all_data`.',
+    VisitPolicy:      '`manage_options`, or `read_all_visits` or `manage_all_data`.',
+    ReportPolicy:     'Any user with at least one FluentAffiliate permission.',
+    UserPolicy:       'Any logged-in WordPress user. The controller then checks the user\'s own affiliate account.',
   }
-  return map[policy] ?? policy
+  return map[policy] ?? `See \`${policy}\`.`
+}
+
+// A policy method named after the controller action replaces verifyRequest()
+// for that route (WPFluent policy dispatch), so flag it on the operation page.
+const policyMethodCache = {}
+function policyHasMethod(policy, action) {
+  if (!(policy in policyMethodCache)) {
+    policyMethodCache[policy] = readFile(join(coreRoot, 'app', 'Http', 'Policies', `${policy}.php`))
+  }
+  return new RegExp(`function\\s+${action}\\s*\\(`).test(policyMethodCache[policy])
 }
 
 // ---------------------------------------------------------------------------
@@ -2721,12 +2967,17 @@ const OPERATION_SLUG_MAP = [
   { module: 'payouts', method: 'DELETE', path: /^\/payouts\/.+\/transactions\/.+$/, slug: 'delete-payout-transaction' },
   { module: 'payouts', method: 'PATCH',  path: /^\/payouts\/.+\/transactions\/bulk-action$/, slug: 'bulk-update-payout-transactions' },
   { module: 'payouts', method: 'PATCH',  path: /^\/payouts\/.+\/transactions\/.+$/, slug: 'update-payout-transaction' },
+  { module: 'payouts', method: 'POST',   path: /^\/payouts\/.+\/paypal-send$/, slug: 'send-paypal-payout' },
+  { module: 'payouts', method: 'POST',   path: /^\/payouts\/.+\/paypal-sync$/, slug: 'sync-paypal-payout' },
+  { module: 'payouts', method: 'POST',   path: /^\/payouts\/.+\/paypal-batch$/, slug: 'recover-paypal-batch' },
+  { module: 'payouts', method: 'POST',   path: /^\/payouts\/.+\/paypal-not-sent$/, slug: 'mark-paypal-payout-not-sent' },
   { module: 'payouts', method: 'GET',    path: /^\/payouts\/.+$/, slug: 'get-payout' },
   { module: 'payouts', method: 'PATCH',  path: /^\/payouts\/.+$/, slug: 'update-payout' },
   // visits
   { module: 'visits', method: 'GET', path: /^\/visits$/, slug: 'list-visits' },
   { module: 'visits', method: 'GET', path: /^\/visits\/export$/, slug: 'export-visits' },
   // portal
+  { module: 'portal', method: 'GET',  path: /^\/portal\/bootstrap$/, slug: 'get-portal-bootstrap' },
   { module: 'portal', method: 'GET',  path: /^\/portal\/stats$/, slug: 'get-portal-stats' },
   { module: 'portal', method: 'GET',  path: /^\/portal\/referrals$/, slug: 'list-portal-referrals' },
   { module: 'portal', method: 'GET',  path: /^\/portal\/transactions$/, slug: 'list-portal-transactions' },
@@ -2773,6 +3024,11 @@ const OPERATION_SLUG_MAP = [
   { module: 'settings', method: 'GET',   path: /^\/settings\/managers$/, slug: 'list-managers' },
   { module: 'settings', method: 'POST',  path: /^\/settings\/managers$/, slug: 'update-managers' },
   { module: 'settings', method: 'DELETE', path: /^\/settings\/managers\/.+$/, slug: 'delete-manager' },
+  { module: 'settings', method: 'GET',    path: /^\/settings\/paypal-payouts$/, slug: 'get-paypal-settings' },
+  { module: 'settings', method: 'POST',   path: /^\/settings\/paypal-payouts$/, slug: 'update-paypal-settings' },
+  { module: 'settings', method: 'DELETE', path: /^\/settings\/paypal-payouts$/, slug: 'delete-paypal-settings' },
+  { module: 'settings', method: 'POST',   path: /^\/settings\/paypal-payouts\/test$/, slug: 'test-paypal-connection' },
+  { module: 'settings', method: 'POST',   path: /^\/settings\/paypal-payouts\/webhook$/, slug: 'register-paypal-webhook' },
   // groups (Pro)
   { module: 'groups', method: 'GET',    path: /^\/settings\/groups$/, slug: 'list-groups' },
   { module: 'groups', method: 'POST',   path: /^\/settings\/groups$/, slug: 'create-group' },
@@ -2927,6 +3183,9 @@ function buildOperationDoc(route) {
     `- **Edition:** ${edition}`,
     `- **Controller:** \`${route.controller}@${route.action}\``,
     `- **Route source:** \`${routeSourceFile}\``,
+    `- **Access:** \`${route.policy}\` — ${policyHasMethod(route.policy, route.action)
+      ? `checked by \`${route.policy}::${route.action}()\`.`
+      : policyAuth(route.policy, route.method)}`,
     '',
     `<OAOperation operationId="${route.operationId}" specUrl="/openapi/public/${route.module}/${route.slug}.json" />`,
     '',
@@ -3048,12 +3307,16 @@ const payoutObject = {
   type: 'object',
   properties: {
     id:                  { type: 'integer' },
-    status:              { type: 'string', enum: ['pending', 'paid', 'failed'] },
-    amount:              { type: 'string' },
+    created_by:          { type: 'integer', nullable: true },
+    title:               { type: 'string', nullable: true },
+    description:         { type: 'string', nullable: true },
+    status:              { type: 'string', enum: ['draft', 'processing', 'sending', 'paid'] },
+    payout_method:       { type: 'string', description: 'A key from the `fluent_affiliate/payout_methods` filter, e.g. `manual` or `paypal_payouts` (Pro).' },
+    total_amount:        { type: 'number' },
     currency:            { type: 'string' },
+    settings:            { type: 'object', nullable: true },
     referrals_count:     { type: 'integer' },
     transactions_count:  { type: 'integer' },
-    affiliates_count:    { type: 'integer' },
     created_at:          { type: 'string', format: 'date-time' },
     updated_at:          { type: 'string', format: 'date-time' },
   },
@@ -3093,6 +3356,36 @@ const messageOnlySchema = {
     message: { type: 'string' },
   },
   required: ['message'],
+}
+
+const paypalSettingsResponse = {
+  type: 'object',
+  properties: {
+    message:     { type: 'string' },
+    notices:     { type: 'array', items: { type: 'string' }, description: 'Webhook problems that did not stop the request.' },
+    settings: {
+      type: 'object',
+      properties: {
+        mode:               { type: 'string', enum: ['test', 'live'] },
+        test_client_id:     { type: 'string' },
+        test_client_secret: { type: 'string', description: 'Masked when set.' },
+        test_webhook_id:    { type: 'string' },
+        live_client_id:     { type: 'string' },
+        live_client_secret: { type: 'string', description: 'Masked when set.' },
+        live_webhook_id:    { type: 'string' },
+      },
+    },
+    webhook_url: { type: 'string', description: 'The URL to register at PayPal (`?fa_paypal_payouts_webhook=1`).' },
+  },
+}
+
+const paypalPayoutActionResponse = {
+  type: 'object',
+  properties: {
+    message: { type: 'string' },
+    payout:  payoutObject,
+  },
+  required: ['message', 'payout'],
 }
 
 const RESPONSE_SCHEMAS = {
@@ -3275,7 +3568,10 @@ const RESPONSE_SCHEMAS = {
         type: 'object',
         properties: {
           ...payoutObject.properties,
-          creator: { type: 'object', nullable: true },
+          creator:           { type: 'object', nullable: true },
+          processing_count:  { type: 'integer', description: 'Transactions still in `processing` — the rows a gateway would send.' },
+          processing_amount: { type: 'number' },
+          paypal_can_send_again: { type: 'boolean', description: 'PayPal payouts only (Pro). Added by `fluent_affiliate/payout/details`.' },
         },
       },
     },
@@ -3293,6 +3589,23 @@ const RESPONSE_SCHEMAS = {
     properties: {
       payable_affiliates:    { type: 'array', items: affiliateObject },
       payable_total_amount:  { type: 'number' },
+      held: {
+        type: 'object',
+        description: 'Referrals still inside the holding period, left out of this payout.',
+        properties: {
+          count:        { type: 'integer' },
+          total_amount: { type: 'number' },
+        },
+      },
+      skipped: {
+        type: 'object',
+        description: 'PayPal payouts only (Pro): affiliates without a valid payment email, left out of this payout.',
+        properties: {
+          count:        { type: 'integer' },
+          total_amount: { type: 'number' },
+          affiliates:   { type: 'array', items: affiliateObject },
+        },
+      },
       config: {
         type: 'object',
         properties: {
@@ -3300,6 +3613,8 @@ const RESPONSE_SCHEMAS = {
           end_date:      { type: 'string', format: 'date' },
           min_payout:    { type: 'number' },
           affiliate_ids: { type: 'array', items: { type: 'integer' } },
+          payout_method: { type: 'string' },
+          ignore_holding_period: { type: 'string', enum: ['yes', 'no'] },
         },
       },
     },
@@ -3385,6 +3700,30 @@ const RESPONSE_SCHEMAS = {
     },
   },
   // ── Portal ───────────────────────────────────────────────────────────────
+  'get-portal-bootstrap': {
+    type: 'object',
+    properties: {
+      site_info: {
+        type: 'object',
+        properties: {
+          site_url:  { type: 'string' },
+          site_name: { type: 'string' },
+          share_url: { type: 'string' },
+          aff_var:   { type: 'string', description: 'Referral query variable, e.g. `ref`.' },
+          aff_value: { type: 'string', description: 'This affiliate\'s referral parameter value.' },
+        },
+      },
+      additional_sites: { type: 'array', items: { type: 'object' } },
+      i18n:             { type: 'object' },
+      start_of_week:    { type: 'integer' },
+      user:             { type: 'object' },
+      branded_coupons:  { type: 'array', items: { type: 'object', properties: { code: { type: 'string' }, description: { type: 'string' } } } },
+      currency:         { type: 'object' },
+      menu_items:       { type: 'array', items: { type: 'object' } },
+      qr_code_settings: { type: 'object' },
+      date_format:      { type: 'string', description: 'WordPress date format converted to Day.js tokens.' },
+    },
+  },
   'get-portal-stats': {
     type: 'object',
     properties: {
@@ -3682,6 +4021,16 @@ const RESPONSE_SCHEMAS = {
   },
   'update-managers': messageOnlySchema,
   'delete-manager':  messageOnlySchema,
+  // ── PayPal Payouts (Pro) ─────────────────────────────────────────────────
+  'get-paypal-settings':     paypalSettingsResponse,
+  'update-paypal-settings':  paypalSettingsResponse,
+  'delete-paypal-settings':  paypalSettingsResponse,
+  'register-paypal-webhook': paypalSettingsResponse,
+  'test-paypal-connection':  messageOnlySchema,
+  'send-paypal-payout':          paypalPayoutActionResponse,
+  'sync-paypal-payout':          paypalPayoutActionResponse,
+  'recover-paypal-batch':        paypalPayoutActionResponse,
+  'mark-paypal-payout-not-sent': paypalPayoutActionResponse,
   // ── Groups (Pro) ─────────────────────────────────────────────────────────
   'list-groups': {
     type: 'object',
@@ -4073,6 +4422,9 @@ async function main() {
     'fluent_affiliate/formatted_order_data_by_{this}':  'fluent_affiliate/formatted_order_data_by_{provider}',
     'fluent_affiliate/payout/transaction/transaction_updated_to_{transaction}':
       'fluent_affiliate/payout/transaction/transaction_updated_to_{status}',
+    // Transaction::markAsPaid() fires the concrete `paid` form of the same dynamic hook
+    'fluent_affiliate/payout/transaction/transaction_updated_to_paid':
+      'fluent_affiliate/payout/transaction/transaction_updated_to_{status}',
   }
   const normaliseHookMap = (map) => {
     const out = {}
@@ -4269,7 +4621,7 @@ async function main() {
 
   const ACTION_PAGE_CATEGORIES = {
     integrations: h => /affiliate_created_via_fluent_form|wipe_current_data/.test(h),
-    affiliates:   h => (/\/affiliate|_delete_affiliate/.test(h) && !/affiliate_group/.test(h)) || h === 'fluent_affiliate/admin_app_rendering',
+    affiliates:   h => (/\/affiliate|_delete_affiliate/.test(h) && !/affiliate_group/.test(h)) || h === 'fluent_affiliate/admin_app_rendering' || /_loading_app$/.test(h),
     groups:       h => /affiliate_group/.test(h),
     referrals:    h => /\/referral|recurring_referral/.test(h),
     payouts:      h => /\/payout/.test(h),
@@ -4285,9 +4637,9 @@ async function main() {
     payouts:      h => /\/payout/.test(h),
     permissions:  h => /has_all_|user_has_affiliate_access/.test(h),
     portal:       h => /\/portal|default_share_url|will_load_tracker|smartcode|smart_code/.test(h),
-    settings:     h => /get_email_config|update_email_config|get_referral_config|update_referral_config|get_feature|update_feature|settings_menu|top_menu|right_menu|admin_vars|admin_menu_title|dashboard_notices|admin_url|portal_page_url|registered_features|max_execution|is_rtl|suggested_colors|payout_form_schema|referral_formats|portal_menu_items|\/currencies|get_currencies|currency_symbols|referral_config_field_types|default_referral_settings|social_media|pro_upgrade_base_url|fluent_affiliate_base_url|fluent_affiliate_tracker_vars|fluent_affiliate_dashboard/.test(h),
-    auth:         h => /\/auth\/|terms_policy|reserved_usernames|captcha/.test(h),
-    integrations: h => /get_integrations|get_integration_config|get_integration_stored_config|save_integration_config|user_ip|trust_proxy_headers|\/migrators|get_migration|get_current_data|wppayform|advanced_report|woo_menu|product_cat_options/.test(h),
+    settings:     h => /get_email_config|update_email_config|get_referral_config|update_referral_config|get_feature|update_feature|settings_menu|top_menu|right_menu|admin_vars|admin_menu_title|dashboard_notices|admin_url|portal_page_url|registered_features|max_execution|is_rtl|suggested_colors|payout_form_schema|referral_formats|portal_menu_items|\/currencies|get_currencies|currency_symbols|referral_config_field_types|default_referral_settings|social_media|pro_upgrade_base_url|license_grace_period_days|fluent_affiliate_base_url|fluent_affiliate_tracker_vars|fluent_affiliate_dashboard/.test(h),
+    auth:         h => /\/auth\/|terms_policy|reserved_usernames|captcha|allowed_signup_roles|reserved_registration_field_names/.test(h),
+    integrations: h => /get_integrations|get_integration_config|get_integration_stored_config|save_integration_config|user_ip|trust_proxy_headers|trusted_proxies|visit_flood_limit|visit_dedup_window|md_ingest_limit|\/migrators|get_migration|get_current_data|wppayform|advanced_report|woo_menu|product_cat_options/.test(h),
     creatives:    h => /creative/.test(h),
     misc:         () => true,
   }
@@ -4402,6 +4754,18 @@ async function main() {
 
   const totalRoutes = allRoutes.length
   const totalSpecs = allRoutes.length
+
+  // Home page stats (docs/index.md → <DocsHome />) read this file, so the
+  // counts follow the source instead of being hand-edited each release.
+  const stats = {
+    models:       readdirSync(join(DOCS_DIR, 'database', 'models')).filter(f => f.endsWith('.md') && f !== 'index.md').length,
+    routes:       totalRoutes,
+    hooks:        Object.keys(actions).length + Object.keys(filters).length,
+    tables:       Object.keys(tables).length,
+    openapiSpecs: totalSpecs,
+  }
+  writeFileSync(join(generatedRoot, 'stats.json'), JSON.stringify(stats, null, 2) + '\n')
+  console.log('  wrote .generated/stats.json', JSON.stringify(stats))
   console.log(`\nDone. Generated docs for ${totalRoutes} routes, ${totalSpecs} OpenAPI specs.`)
 }
 

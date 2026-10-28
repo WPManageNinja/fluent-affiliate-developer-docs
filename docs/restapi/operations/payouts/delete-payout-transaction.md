@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `PayoutController@deleteTransaction`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `PayoutPolicy` — `manage_options`, or `manage_all_payouts` or `manage_all_data`.
 
 <OAOperation operationId="deletePayoutTransaction" specUrl="/openapi/public/payouts/delete-payout-transaction.json" />

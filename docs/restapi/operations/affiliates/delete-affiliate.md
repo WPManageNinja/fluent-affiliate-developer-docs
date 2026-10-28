@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `AffiliateController@deleteAffiliate`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `AffiliatePolicy` — `manage_options`, or `manage_all_affiliates` or `manage_all_data`.
 
 <OAOperation operationId="deleteAffiliate" specUrl="/openapi/public/affiliates/delete-affiliate.json" />

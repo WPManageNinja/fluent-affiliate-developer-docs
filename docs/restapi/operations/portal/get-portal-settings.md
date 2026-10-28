@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `PortalController@getSettings`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `UserPolicy` — Any logged-in WordPress user. The controller then checks the user's own affiliate account.
 
 <OAOperation operationId="getPortalSettings" specUrl="/openapi/public/portal/get-portal-settings.json" />

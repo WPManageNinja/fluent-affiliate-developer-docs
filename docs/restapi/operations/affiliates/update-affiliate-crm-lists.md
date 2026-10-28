@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `AffiliateController@updateCrmLists`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `AffiliatePolicy` — `manage_options`, or `manage_all_affiliates` or `manage_all_data`.
 
 <OAOperation operationId="updateAffiliateCrmLists" specUrl="/openapi/public/affiliates/update-affiliate-crm-lists.json" />
