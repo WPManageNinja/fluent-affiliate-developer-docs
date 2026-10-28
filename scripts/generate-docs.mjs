@@ -2310,7 +2310,8 @@ function buildSchemaDoc(tables) {
     const proTag = meta.isPro ? ' <span class="pro-badge">PRO</span>' : ''
     const TABLE_MODEL_SLUG = { fa_affiliates: 'affiliate', fa_referrals: 'referral', fa_payouts: 'payout', fa_payout_transactions: 'transaction', fa_visits: 'visit', fa_customers: 'customer', fa_meta: 'meta', fa_creatives: 'creative' }
     const modelSlug = TABLE_MODEL_SLUG[tableName] ?? tableName.replace('fa_', '').replace(/_/g, '-')
-    lines.push('', `## \`${tableName}\`${proTag}`, '', meta.desc, '', `**Model class:** [\`${meta.class}\`](/database/models/${modelSlug})`, '', '| Column | Type | Nullable | Default | Description |', '|--------|------|----------|---------|-------------|')
+    // explicit {#id}: the PRO badge would otherwise change the slug the inventory links to
+    lines.push('', `## \`${tableName}\`${proTag} {#${tableName.replace(/_/g, '-')}}`, '', meta.desc, '', `**Model class:** [\`${meta.class}\`](/database/models/${modelSlug})`, '', '| Column | Type | Nullable | Default | Description |', '|--------|------|----------|---------|-------------|')
 
     for (const col of cols) {
       const def = col.default !== null ? `\`${col.default}\`` : '—'

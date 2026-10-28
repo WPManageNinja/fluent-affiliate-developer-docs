@@ -91,7 +91,7 @@ erDiagram
     fa_meta }o--|| fa_affiliates : "polymorphic"
 ```
 
-## `fa_affiliates`
+## `fa_affiliates` {#fa-affiliates}
 
 Represents a registered affiliate. Central model in FluentAffiliate.
 
@@ -119,7 +119,7 @@ Represents a registered affiliate. Central model in FluentAffiliate.
 | `created_at` | `TIMESTAMP` | YES | — | Timestamp when the record was created. |
 | `updated_at` | `TIMESTAMP` | YES | — | Timestamp when the record was last updated. |
 
-## `fa_referrals`
+## `fa_referrals` {#fa-referrals}
 
 Represents a commission event generated when a referred visitor completes a qualifying action.
 
@@ -149,7 +149,7 @@ Represents a commission event generated when a referred visitor completes a qual
 | `created_at` | `TIMESTAMP` | YES | — | Timestamp when the record was created. |
 | `updated_at` | `TIMESTAMP` | YES | — | Timestamp when the record was last updated. |
 
-## `fa_payouts`
+## `fa_payouts` {#fa-payouts}
 
 A payout batch grouping multiple affiliate transactions.
 
@@ -169,7 +169,7 @@ A payout batch grouping multiple affiliate transactions.
 | `created_at` | `TIMESTAMP` | YES | — | Timestamp when the record was created. |
 | `updated_at` | `TIMESTAMP` | YES | — | Timestamp when the record was last updated. |
 
-## `fa_payout_transactions`
+## `fa_payout_transactions` {#fa-payout-transactions}
 
 An individual payout transaction for a single affiliate within a payout batch.
 
@@ -189,7 +189,7 @@ An individual payout transaction for a single affiliate within a payout batch.
 | `created_at` | `TIMESTAMP` | YES | — | Timestamp when the record was created. |
 | `updated_at` | `TIMESTAMP` | YES | — | Timestamp when the record was last updated. |
 
-## `fa_visits`
+## `fa_visits` {#fa-visits}
 
 Tracks each click of an affiliate referral link.
 
@@ -210,7 +210,7 @@ Tracks each click of an affiliate referral link.
 | `created_at` | `TIMESTAMP` | YES | — | Timestamp when the record was created. |
 | `updated_at` | `TIMESTAMP` | YES | — | Timestamp when the record was last updated. |
 
-## `fa_customers`
+## `fa_customers` {#fa-customers}
 
 A customer who made a purchase through an affiliate link.
 
@@ -229,7 +229,7 @@ A customer who made a purchase through an affiliate link.
 | `created_at` | `TIMESTAMP` | YES | — | Timestamp when the record was created. |
 | `updated_at` | `TIMESTAMP` | YES | — | Timestamp when the record was last updated. |
 
-## `fa_meta`
+## `fa_meta` {#fa-meta}
 
 Generic key-value meta storage for affiliate and other objects.
 
@@ -245,7 +245,7 @@ Generic key-value meta storage for affiliate and other objects.
 | `created_at` | `TIMESTAMP` | YES | — | Timestamp when the record was created. |
 | `updated_at` | `TIMESTAMP` | YES | — | Timestamp when the record was last updated. |
 
-## `fa_creatives` <span class="pro-badge">PRO</span>
+## `fa_creatives` <span class="pro-badge">PRO</span> {#fa-creatives}
 
 A marketing creative asset (banner, image, or text) managed in FluentAffiliate Pro.
 
