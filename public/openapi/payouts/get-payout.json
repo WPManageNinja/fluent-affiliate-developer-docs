@@ -112,7 +112,16 @@
                         },
                         "creator": {
                           "type": "object",
-                          "nullable": true
+                          "nullable": true,
+                          "description": "Name only.",
+                          "properties": {
+                            "ID": {
+                              "type": "integer"
+                            },
+                            "display_name": {
+                              "type": "string"
+                            }
+                          }
                         },
                         "processing_count": {
                           "type": "integer",

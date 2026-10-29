@@ -2663,7 +2663,7 @@ const REST_DESCRIPTIONS = {
   'GET /payouts/{id}':            'Retrieve a single payout.',
   'GET /payouts/{id}/referrals':  'List referrals included in a payout.',
   'GET /payouts/{id}/transactions': 'List transactions in a payout.',
-  'GET /payouts/{id}/transactions-export': 'Export payout transactions as CSV rows. Pass `format=paypal` to get the rows for a PayPal Payouts upload file instead (`email`, `amount`, `currency`), with the amount formatted for the payout currency (decimal comma for EUR and BRL). A payout sent through a payment gateway cannot be exported in the PayPal format.',
+  'GET /payouts/{id}/transactions-export': 'Export payout transactions as CSV rows. Pass `format=paypal` to get `rows` for a PayPal Payouts upload file instead (`email`, `amount`, `currency`), with the amount formatted for the payout currency (whole units for HUF, JPY and TWD; decimal comma for EUR and BRL). A payout sent through a payment gateway cannot be exported in the PayPal format.',
   'DELETE /payouts/{id}/transactions/{transaction_id}': 'Delete a payout transaction.',
   'PATCH /payouts/{id}/transactions/{transaction_id}': 'Update a payout transaction.',
   'PATCH /payouts/{id}/transactions/bulk-action': 'Bulk update payout transactions.',
@@ -2700,7 +2700,7 @@ const REST_DESCRIPTIONS = {
   'GET /settings/referral-config': 'Get the referral program configuration.',
   'POST /settings/referral-config': 'Save the referral program configuration.',
   'GET /settings/migrations':     'List available data migrators.',
-  'POST /settings/migrations/start': 'Start a data migration.',
+  'POST /settings/migrations/start': 'Start or resume a data migration. The importers keep the source IDs, so a fresh start (or `reset_migration=yes`) returns `422` when FluentAffiliate already has data: wipe the data first with `POST /settings/migrations/wipe`. Resuming an unfinished run of the same importer is allowed.',
   'GET /settings/migrations/status': 'Poll the status of a running migration.',
   'POST /settings/migrations/wipe': 'Wipe all FluentAffiliate data.',
   'GET /settings/migrations/statistics': 'Get migration statistics.',
@@ -2798,7 +2798,7 @@ const REST_MODULE_META = {
   portal: {
     title: 'Portal API',
     description: 'Affiliate portal data — stats, referrals, transactions, visits, and settings for the currently authenticated affiliate.',
-    auth: 'Portal routes use `UserPolicy` and always return data scoped to the currently authenticated affiliate.',
+    auth: 'Portal routes use `UserPolicy`: the user must be logged in and have an `active` affiliate account. Each route returns only the data of that affiliate.',
     isPro: false,
   },
   reports: {
@@ -2910,7 +2910,7 @@ function policyAuth(policy, method) {
     PayoutPolicy:     read ? '`manage_options`, or `read_all_payouts`, `manage_all_payouts` or `manage_all_data`.' : '`manage_options`, or `manage_all_payouts` or `manage_all_data`.',
     VisitPolicy:      '`manage_options`, or `read_all_visits` or `manage_all_data`.',
     ReportPolicy:     'Any user with at least one FluentAffiliate permission.',
-    UserPolicy:       'Any logged-in WordPress user. The controller then checks the user\'s own affiliate account.',
+    UserPolicy:       'A logged-in WordPress user with an `active` affiliate account. Pending and inactive affiliates are rejected.',
   }
   return map[policy] ?? `See \`${policy}\`.`
 }
@@ -3431,7 +3431,27 @@ const RESPONSE_SCHEMAS = {
   'export-affiliates': {
     type: 'object',
     properties: {
-      affiliates: { type: 'array', items: affiliateObject },
+      affiliates: {
+        type: 'array',
+        description: 'CSV rows. Text cells are escaped against spreadsheet formulas; amounts are strings with two decimals.',
+        items: {
+          type: 'object',
+          properties: {
+            id:              { type: 'integer' },
+            full_name:       { type: 'string' },
+            email:           { type: 'string' },
+            payment_email:   { type: 'string' },
+            rate_type:       { type: 'string' },
+            rate:            { type: 'number' },
+            status:          { type: 'string' },
+            total_earnings:  { type: 'string', example: '90.90' },
+            unpaid_earnings: { type: 'string', example: '0.00' },
+            referrals:       { type: 'integer' },
+            visits:          { type: 'integer' },
+            created_at:      { type: 'string' },
+          },
+        },
+      },
       limited:    { type: 'boolean' },
       total:      { type: 'integer' },
     },
@@ -3550,7 +3570,27 @@ const RESPONSE_SCHEMAS = {
   'export-referrals': {
     type: 'object',
     properties: {
-      referrals: { type: 'array', items: referralObject },
+      referrals: {
+        type: 'array',
+        description: 'CSV rows. Text cells are escaped against spreadsheet formulas; amounts are strings with two decimals.',
+        items: {
+          type: 'object',
+          properties: {
+            id:              { type: 'integer' },
+            affiliate_name:  { type: 'string' },
+            affiliate_email: { type: 'string', description: 'Empty unless the user also has affiliate read access.' },
+            amount:          { type: 'string', example: '12.50' },
+            order_total:     { type: 'string', example: '125.00' },
+            currency:        { type: 'string' },
+            description:     { type: 'string' },
+            provider:        { type: 'string' },
+            provider_id:     { type: 'string' },
+            type:            { type: 'string' },
+            status:          { type: 'string' },
+            created_at:      { type: 'string' },
+          },
+        },
+      },
       limited:   { type: 'boolean' },
       total:     { type: 'integer' },
     },
@@ -3569,7 +3609,7 @@ const RESPONSE_SCHEMAS = {
         type: 'object',
         properties: {
           ...payoutObject.properties,
-          creator:           { type: 'object', nullable: true },
+          creator:           { type: 'object', nullable: true, description: 'Name only.', properties: { ID: { type: 'integer' }, display_name: { type: 'string' } } },
           processing_count:  { type: 'integer', description: 'Transactions still in `processing` — the rows a gateway would send.' },
           processing_amount: { type: 'number' },
           paypal_can_send_again: { type: 'boolean', description: 'PayPal payouts only (Pro). Added by `fluent_affiliate/payout/details`.' },
@@ -3671,6 +3711,7 @@ const RESPONSE_SCHEMAS = {
     properties: {
       transactions: {
         type: 'array',
+        description: 'CSV rows (default format). Text cells are escaped against spreadsheet formulas; amounts are strings with two decimals.',
         items: {
           type: 'object',
           properties: {
@@ -3678,11 +3719,26 @@ const RESPONSE_SCHEMAS = {
             affiliate_name: { type: 'string' },
             email:          { type: 'string' },
             payout_email:   { type: 'string' },
-            amount:         { type: 'number' },
+            amount:         { type: 'string', example: '90.90' },
             currency:       { type: 'string' },
           },
         },
       },
+      rows: {
+        type: 'array',
+        description: 'PayPal Payouts file rows (`format=paypal` only). Returned instead of `transactions`.',
+        items: {
+          type: 'object',
+          properties: {
+            email:    { type: 'string' },
+            amount:   { type: 'string', description: 'Whole units for HUF, JPY and TWD; decimal comma for EUR and BRL.' },
+            currency: { type: 'string' },
+          },
+        },
+      },
+      skipped: { type: 'array', items: { type: 'string' }, description: '`format=paypal` only: names of the affiliates left out of the file because they have no valid payment email.' },
+      limited: { type: 'boolean' },
+      total:   { type: 'integer' },
     },
   },
   // ── Visits ───────────────────────────────────────────────────────────────

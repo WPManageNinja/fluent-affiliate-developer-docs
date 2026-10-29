@@ -1,6 +1,6 @@
 ---
 title: Export Payout Transactions
-description: "Export payout transactions as CSV rows. Pass `format=paypal` to get the rows for a PayPal Payouts upload file instead (`email`, `amount`, `currency`), with the amount formatted for the payout currency (decimal comma for EUR and BRL). A payout sent through a payment gateway cannot be exported in the PayPal format."
+description: "Export payout transactions as CSV rows. Pass `format=paypal` to get `rows` for a PayPal Payouts upload file instead (`email`, `amount`, `currency`), with the amount formatted for the payout currency (whole units for HUF, JPY and TWD; decimal comma for EUR and BRL). A payout sent through a payment gateway cannot be exported in the PayPal format."
 outline: false
 aside: false
 ---

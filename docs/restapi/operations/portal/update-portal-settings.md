@@ -11,6 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `PortalController@updateSettings`
 - **Route source:** `app/Http/Routes/api.php`
-- **Access:** `UserPolicy` — Any logged-in WordPress user. The controller then checks the user's own affiliate account.
+- **Access:** `UserPolicy` — A logged-in WordPress user with an `active` affiliate account. Pending and inactive affiliates are rejected.
 
 <OAOperation operationId="updatePortalSettings" specUrl="/openapi/public/portal/update-portal-settings.json" />

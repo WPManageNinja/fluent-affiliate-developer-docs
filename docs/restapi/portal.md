@@ -9,7 +9,7 @@ Affiliate portal data — stats, referrals, transactions, visits, and settings f
 
 ## Authentication
 
-Portal routes use `UserPolicy` and always return data scoped to the currently authenticated affiliate.
+Portal routes use `UserPolicy`: the user must be logged in and have an `active` affiliate account. Each route returns only the data of that affiliate.
 
 ## Endpoints
 

@@ -27,7 +27,7 @@
       "get": {
         "operationId": "exportPayoutTransactions",
         "summary": "GET Export Payout Transactions",
-        "description": "Export payout transactions as CSV rows. Pass `format=paypal` to get the rows for a PayPal Payouts upload file instead (`email`, `amount`, `currency`), with the amount formatted for the payout currency (decimal comma for EUR and BRL). A payout sent through a payment gateway cannot be exported in the PayPal format.\n\nController: `PayoutController@getExportableTransactions`\nRoute source: `app/Http/Routes/api.php`",
+        "description": "Export payout transactions as CSV rows. Pass `format=paypal` to get `rows` for a PayPal Payouts upload file instead (`email`, `amount`, `currency`), with the amount formatted for the payout currency (whole units for HUF, JPY and TWD; decimal comma for EUR and BRL). A payout sent through a payment gateway cannot be exported in the PayPal format.\n\nController: `PayoutController@getExportableTransactions`\nRoute source: `app/Http/Routes/api.php`",
         "tags": [
           "Payouts"
         ],
@@ -95,6 +95,7 @@
                   "properties": {
                     "transactions": {
                       "type": "array",
+                      "description": "CSV rows (default format). Text cells are escaped against spreadsheet formulas; amounts are strings with two decimals.",
                       "items": {
                         "type": "object",
                         "properties": {
@@ -111,13 +112,46 @@
                             "type": "string"
                           },
                           "amount": {
-                            "type": "number"
+                            "type": "string",
+                            "example": "90.90"
                           },
                           "currency": {
                             "type": "string"
                           }
                         }
                       }
+                    },
+                    "rows": {
+                      "type": "array",
+                      "description": "PayPal Payouts file rows (`format=paypal` only). Returned instead of `transactions`.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "email": {
+                            "type": "string"
+                          },
+                          "amount": {
+                            "type": "string",
+                            "description": "Whole units for HUF, JPY and TWD; decimal comma for EUR and BRL."
+                          },
+                          "currency": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "skipped": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "`format=paypal` only: names of the affiliates left out of the file because they have no valid payment email."
+                    },
+                    "limited": {
+                      "type": "boolean"
+                    },
+                    "total": {
+                      "type": "integer"
                     }
                   }
                 }

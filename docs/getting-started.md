@@ -125,7 +125,7 @@ Route groups use policy classes for authorization. Each policy implements `verif
 | VisitPolicy | `/visits` | Users with `read_all_visits` or `manage_all_data` |
 | AdminPolicy | `/settings` | WordPress `manage_options` or `manage_all_data` |
 | SuperAdminPolicy | `/settings` (migrations wipe, license, affiliate managers, PayPal Payouts keys) | WordPress `manage_options` only — cannot be delegated |
-| UserPolicy | `/portal` | Any authenticated WordPress user |
+| UserPolicy | `/portal` | A logged-in WordPress user with an `active` affiliate account |
 | ReportPolicy | `/reports` | Users holding at least one FluentAffiliate permission (`PermissionManager::hasAnyPermission()`) |
 
 All permission checks delegate to `FluentAffiliate\App\Services\PermissionManager`. WordPress administrators (users with `manage_options`) always pass all policy checks.

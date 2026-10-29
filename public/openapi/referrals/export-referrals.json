@@ -86,50 +86,48 @@
                   "properties": {
                     "referrals": {
                       "type": "array",
+                      "description": "CSV rows. Text cells are escaped against spreadsheet formulas; amounts are strings with two decimals.",
                       "items": {
                         "type": "object",
                         "properties": {
                           "id": {
                             "type": "integer"
                           },
-                          "affiliate_id": {
-                            "type": "integer"
-                          },
-                          "visit_id": {
-                            "type": "integer",
-                            "nullable": true
-                          },
-                          "order_id": {
+                          "affiliate_name": {
                             "type": "string"
                           },
-                          "status": {
+                          "affiliate_email": {
                             "type": "string",
-                            "enum": [
-                              "pending",
-                              "approved",
-                              "rejected",
-                              "paid"
-                            ]
+                            "description": "Empty unless the user also has affiliate read access."
                           },
                           "amount": {
-                            "type": "string"
+                            "type": "string",
+                            "example": "12.50"
+                          },
+                          "order_total": {
+                            "type": "string",
+                            "example": "125.00"
                           },
                           "currency": {
+                            "type": "string"
+                          },
+                          "description": {
                             "type": "string"
                           },
                           "provider": {
                             "type": "string"
                           },
-                          "provider_url": {
+                          "provider_id": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          },
+                          "status": {
                             "type": "string"
                           },
                           "created_at": {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          "updated_at": {
-                            "type": "string",
-                            "format": "date-time"
+                            "type": "string"
                           }
                         }
                       }
