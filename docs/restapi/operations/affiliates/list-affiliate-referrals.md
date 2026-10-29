@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `AffiliateController@getReferrals`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `AffiliatePolicy` — checked by `AffiliatePolicy::getReferrals()`.
 
 <OAOperation operationId="listAffiliateReferrals" specUrl="/openapi/public/affiliates/list-affiliate-referrals.json" />

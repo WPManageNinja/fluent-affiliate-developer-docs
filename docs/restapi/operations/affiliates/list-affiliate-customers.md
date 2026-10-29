@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `AffiliateController@getCustomers`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `AffiliatePolicy` — checked by `AffiliatePolicy::getCustomers()`.
 
 <OAOperation operationId="listAffiliateCustomers" specUrl="/openapi/public/affiliates/list-affiliate-customers.json" />

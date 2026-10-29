@@ -61,13 +61,21 @@
 </template>
 
 <script>
+import { useData } from 'vitepress'
+
 export default {
   name: 'DocsHome',
   props: {
+    // Defaults to themeConfig.docsStats (.generated/stats.json, written by
+    // scripts/generate-docs.mjs); pass a prop only to override.
     stats: {
       type: Object,
-      required: true,
+      default: null,
     },
+  },
+  setup() {
+    const { theme } = useData()
+    return { theme }
   },
   data() {
     return {
@@ -137,12 +145,13 @@ export default {
   },
   computed: {
     statItems() {
+      const stats = this.stats ?? this.theme.docsStats ?? {}
       return [
-        { value: this.stats.models,       label: 'Models' },
-        { value: this.stats.routes,       label: 'API Routes' },
-        { value: this.stats.hooks,        label: 'Hooks' },
-        { value: this.stats.tables,       label: 'DB Tables' },
-        { value: this.stats.openapiSpecs, label: 'OpenAPI Specs' },
+        { value: stats.models,       label: 'Models' },
+        { value: stats.routes,       label: 'API Routes' },
+        { value: stats.hooks,        label: 'Hooks' },
+        { value: stats.tables,       label: 'DB Tables' },
+        { value: stats.openapiSpecs, label: 'OpenAPI Specs' },
       ]
     },
   },

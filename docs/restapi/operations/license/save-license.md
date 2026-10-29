@@ -11,5 +11,6 @@ aside: false
 - **Edition:** <span class="pro-badge">PRO</span>
 - **Controller:** `LicenseController@saveLicense`
 - **Route source:** `fluent-affiliate-pro/app/Http/Routes/api.php`
+- **Access:** `SuperAdminPolicy` — WordPress administrators only (`manage_options`). Not delegable.
 
 <OAOperation operationId="saveLicense" specUrl="/openapi/public/license/save-license.json" />

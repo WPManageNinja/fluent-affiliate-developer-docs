@@ -9,7 +9,7 @@ description: Action hooks in the Creatives (Pro) category.
 
 | Hook | Description |
 |------|-------------|
-| [`fluent_affiliate/creative_status_changed`](#fluent-affiliate-creative-status-changed) | Fired when a creative's status transitions (e. |
+| [`fluent_affiliate/creative_status_changed`](#fluent-affiliate-creative-status-changed) | Fired when a creative's status transitions (e.g. scheduled → active, active → expired). |
 | [`fluent_affiliate/after_create_creative`](#fluent-affiliate-after-create-creative) | Fired after a new creative asset has been saved to the database. |
 | [`fluent_affiliate/creative_updated`](#fluent-affiliate-creative-updated) | Fired after a creative asset has been updated. |
 | [`fluent_affiliate/before_delete_creative`](#fluent-affiliate-before-delete-creative) | Fired immediately before a creative asset is permanently deleted. |

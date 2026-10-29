@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `SettingController@getAffiliatesOptions`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `AdminPolicy` — checked by `AdminPolicy::getAffiliatesOptions()`.
 
 <OAOperation operationId="getAffiliateOptions" specUrl="/openapi/public/settings/get-affiliate-options.json" />

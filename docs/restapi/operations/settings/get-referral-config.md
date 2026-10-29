@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `SettingController@getReferralConfig`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `AdminPolicy` — `manage_options` or the `manage_all_data` permission.
 
 <OAOperation operationId="getReferralConfig" specUrl="/openapi/public/settings/get-referral-config.json" />

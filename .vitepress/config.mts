@@ -23,6 +23,13 @@ const MODULE_ORDER: Record<string, string[]> = existsSync(moduleOrderPath)
   ? JSON.parse(readFileSync(moduleOrderPath, 'utf8'))
   : {}
 
+// Home page counts, written by scripts/generate-docs.mjs. Read here rather than
+// imported in DocsHome.vue: vite.assetsInclude turns *.json imports into URLs.
+const statsPath = join(generatedDir, 'stats.json')
+const DOCS_STATS: Record<string, number> = existsSync(statsPath)
+  ? JSON.parse(readFileSync(statsPath, 'utf8'))
+  : {}
+
 const databaseSidebar = [
   {
     text: 'Overview',
@@ -120,6 +127,7 @@ const proFeaturePages = [
   { text: 'Recurring Commissions', link: '/guides/recurring-commissions' },
   { text: 'Custom Registration Fields', link: '/guides/custom-registration-fields' },
   { text: 'Captcha', link: '/guides/captcha' },
+  { text: 'PayPal Payouts', link: '/guides/paypal-payouts' },
 ]
 
 const integrationPages = [
@@ -363,6 +371,7 @@ export default defineConfig({
     },
   },
   themeConfig: {
+    docsStats: DOCS_STATS,
     logo: '/images/fluentaffiliate_icon.png',
     siteTitle: 'FluentAffiliate',
     nav: [

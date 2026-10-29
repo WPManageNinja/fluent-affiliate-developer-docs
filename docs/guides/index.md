@@ -57,6 +57,10 @@ Add custom fields to the affiliate registration form. Eight field types, values 
 
 Protect the registration form with Google reCAPTCHA v2/v3 — validated-keys-before-save gate, encrypted secrets, and a pluggable provider layer.
 
+### [PayPal Payouts](/guides/paypal-payouts)
+
+Send payouts through the PayPal Payouts API. The guide covers the settings, the payout lifecycle, the webhook and background sync, and the hooks that let you add your own payout gateway.
+
 ---
 
 ## Integrations

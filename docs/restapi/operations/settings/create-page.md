@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `SettingController@createPage`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `AdminPolicy` — checked by `AdminPolicy::createPage()`.
 
 <OAOperation operationId="createPage" specUrl="/openapi/public/settings/create-page.json" />

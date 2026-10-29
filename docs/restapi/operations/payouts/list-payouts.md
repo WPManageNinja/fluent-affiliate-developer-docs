@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `PayoutController@index`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `PayoutPolicy` — `manage_options`, or `read_all_payouts`, `manage_all_payouts` or `manage_all_data`.
 
 <OAOperation operationId="listPayouts" specUrl="/openapi/public/payouts/list-payouts.json" />

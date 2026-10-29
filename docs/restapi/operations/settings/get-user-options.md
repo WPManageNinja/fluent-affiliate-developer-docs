@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `SettingController@getUsersOptions`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `AdminPolicy` — checked by `AdminPolicy::getUsersOptions()`.
 
 <OAOperation operationId="getUserOptions" specUrl="/openapi/public/settings/get-user-options.json" />

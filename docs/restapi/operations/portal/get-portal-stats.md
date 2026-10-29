@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `PortalController@getStats`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `UserPolicy` — A logged-in WordPress user with an `active` affiliate account. Pending and inactive affiliates are rejected.
 
 <OAOperation operationId="getPortalStats" specUrl="/openapi/public/portal/get-portal-stats.json" />

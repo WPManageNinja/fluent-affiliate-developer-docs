@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `PayoutController@bulkPatchTransactions`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `PayoutPolicy` — `manage_options`, or `manage_all_payouts` or `manage_all_data`.
 
 <OAOperation operationId="bulkUpdatePayoutTransactions" specUrl="/openapi/public/payouts/bulk-update-payout-transactions.json" />

@@ -5,7 +5,7 @@ description: All FluentAffiliate WordPress action hooks, organized by category.
 
 # Action Hooks
 
-FluentAffiliate fires **35 action hooks** (including dynamic variants). Use `add_action()` to hook into these events.
+FluentAffiliate fires **36 action hooks** (including dynamic variants). Use `add_action()` to hook into these events.
 
 | Category | Description |
 |----------|-------------|

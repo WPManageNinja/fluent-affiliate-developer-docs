@@ -306,27 +306,45 @@
                           "id": {
                             "type": "integer"
                           },
+                          "created_by": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "title": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "description": {
+                            "type": "string",
+                            "nullable": true
+                          },
                           "status": {
                             "type": "string",
                             "enum": [
-                              "pending",
-                              "paid",
-                              "failed"
+                              "draft",
+                              "processing",
+                              "sending",
+                              "paid"
                             ]
                           },
-                          "amount": {
-                            "type": "string"
+                          "payout_method": {
+                            "type": "string",
+                            "description": "A key from the `fluent_affiliate/payout_methods` filter, e.g. `manual` or `paypal_payouts` (Pro)."
+                          },
+                          "total_amount": {
+                            "type": "number"
                           },
                           "currency": {
                             "type": "string"
+                          },
+                          "settings": {
+                            "type": "object",
+                            "nullable": true
                           },
                           "referrals_count": {
                             "type": "integer"
                           },
                           "transactions_count": {
-                            "type": "integer"
-                          },
-                          "affiliates_count": {
                             "type": "integer"
                           },
                           "created_at": {

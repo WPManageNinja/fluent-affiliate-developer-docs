@@ -11,5 +11,6 @@ aside: false
 - **Edition:** <span class="pro-badge">PRO</span>
 - **Controller:** `ProSettingController@getAffiliateGroupsOptions`
 - **Route source:** `fluent-affiliate-pro/app/Http/Routes/api.php`
+- **Access:** `AdminPolicy` — checked by `AdminPolicy::getAffiliateGroupsOptions()`.
 
 <OAOperation operationId="getAffiliateGroupOptions" specUrl="/openapi/public/settings/get-affiliate-group-options.json" />

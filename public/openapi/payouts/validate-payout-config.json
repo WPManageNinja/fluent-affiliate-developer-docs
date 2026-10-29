@@ -112,6 +112,83 @@
                     "payable_total_amount": {
                       "type": "number"
                     },
+                    "held": {
+                      "type": "object",
+                      "description": "Referrals still inside the holding period, left out of this payout.",
+                      "properties": {
+                        "count": {
+                          "type": "integer"
+                        },
+                        "total_amount": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "skipped": {
+                      "type": "object",
+                      "description": "PayPal payouts only (Pro): affiliates without a valid payment email, left out of this payout.",
+                      "properties": {
+                        "count": {
+                          "type": "integer"
+                        },
+                        "total_amount": {
+                          "type": "number"
+                        },
+                        "affiliates": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "user_id": {
+                                "type": "integer"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "active",
+                                  "pending",
+                                  "rejected",
+                                  "inactive"
+                                ]
+                              },
+                              "affiliate_code": {
+                                "type": "string"
+                              },
+                              "rate": {
+                                "type": "string"
+                              },
+                              "rate_type": {
+                                "type": "string",
+                                "enum": [
+                                  "percentage",
+                                  "flat"
+                                ]
+                              },
+                              "earnings_balance": {
+                                "type": "string"
+                              },
+                              "total_paid": {
+                                "type": "string"
+                              },
+                              "total_unpaid": {
+                                "type": "string"
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "updated_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
                     "config": {
                       "type": "object",
                       "properties": {
@@ -131,6 +208,16 @@
                           "items": {
                             "type": "integer"
                           }
+                        },
+                        "payout_method": {
+                          "type": "string"
+                        },
+                        "ignore_holding_period": {
+                          "type": "string",
+                          "enum": [
+                            "yes",
+                            "no"
+                          ]
                         }
                       }
                     }

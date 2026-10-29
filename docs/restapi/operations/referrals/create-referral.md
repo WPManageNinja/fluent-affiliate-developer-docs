@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `ReferralController@createReferral`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `ReferralPolicy` — `manage_options`, or `manage_all_referrals` or `manage_all_data`.
 
 <OAOperation operationId="createReferral" specUrl="/openapi/public/referrals/create-referral.json" />

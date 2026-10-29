@@ -7,7 +7,7 @@ description: Developer introduction to FluentAffiliate — architecture, authent
 
 ## Overview
 
-FluentAffiliate is a self-hosted WordPress affiliate program management plugin by WPManageNinja (v1.6.0). It requires PHP 7.4+ and WordPress 5.0+. The plugin manages affiliates, tracks referrals, processes payouts, and integrates with e-commerce plugins through a two-class connector pattern.
+FluentAffiliate is a self-hosted WordPress affiliate program management plugin by WPManageNinja (v1.7.0). It requires PHP 7.4+ and WordPress 5.0+. The plugin manages affiliates, tracks referrals, processes payouts, and integrates with e-commerce plugins through a two-class connector pattern.
 
 All data is stored in custom database tables (prefixed `fa_`) rather than WordPress post types. There is no dependency on external SaaS services — the plugin runs entirely within your WordPress installation.
 
@@ -119,12 +119,13 @@ Route groups use policy classes for authorization. Each policy implements `verif
 
 | Policy | Route prefix | Who can access |
 |---|---|---|
-| AffiliatePolicy | `/affiliates` | Users with `read_all_affiliates` or `manage_all_affiliates` |
-| ReferralPolicy | `/referrals` | Users with `read_all_referrals` or `manage_all_referrals` |
-| PayoutPolicy | `/payouts` | Users with `read_all_payouts` or `manage_all_payouts` |
-| VisitPolicy | `/visits` | Users with `read_all_visits` |
+| AffiliatePolicy | `/affiliates` | Users with `read_all_affiliates`, `manage_all_affiliates` or `manage_all_data` |
+| ReferralPolicy | `/referrals` | Users with `read_all_referrals`, `manage_all_referrals` or `manage_all_data` |
+| PayoutPolicy | `/payouts` | Users with `read_all_payouts`, `manage_all_payouts` or `manage_all_data` |
+| VisitPolicy | `/visits` | Users with `read_all_visits` or `manage_all_data` |
 | AdminPolicy | `/settings` | WordPress `manage_options` or `manage_all_data` |
-| UserPolicy | `/portal` | Any authenticated WordPress user |
+| SuperAdminPolicy | `/settings` (migrations wipe, license, affiliate managers, PayPal Payouts keys) | WordPress `manage_options` only — cannot be delegated |
+| UserPolicy | `/portal` | A logged-in WordPress user with an `active` affiliate account |
 | ReportPolicy | `/reports` | Users holding at least one FluentAffiliate permission (`PermissionManager::hasAnyPermission()`) |
 
 All permission checks delegate to `FluentAffiliate\App\Services\PermissionManager`. WordPress administrators (users with `manage_options`) always pass all policy checks.

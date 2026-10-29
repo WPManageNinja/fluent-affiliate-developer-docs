@@ -15,6 +15,7 @@ description: Filter hooks in the Referrals category.
 | [`fluent_affiliate/provider_reference_{provider}_url`](#fluent-affiliate-provider-reference-provider-url) | Filters the admin URL for a referral's source order/payment. |
 | [`fluent_affiliate/referral_data`](#fluent-affiliate-referral-data) | Filters the referral data array before a referral is recorded by an integration. |
 | [`fluent_affiliate/ignore_zero_amount_referral`](#fluent-affiliate-ignore-zero-amount-referral) | Filters whether referrals with a zero commission amount should be discarded. |
+| [`fluent_affiliate/ignore_zero_total_referral`](#fluent-affiliate-ignore-zero-total-referral) | Filters whether a referral is discarded when the order total is zero or less. |
 | [`fluent_affiliate/commission`](#fluent-affiliate-commission) | Filters the calculated commission amount before it is saved to a referral. |
 | [`fluent_affiliate/formatted_order_data_by_{provider}`](#fluent-affiliate-formatted-order-data-by-provider) | Filters the normalized order payload an integration builds before a referral is recorded. |
 | [`fluent_affiliate/recurring_commission`](#fluent-affiliate-recurring-commission) | Filters the recurring commission data before it is recorded for a subscription renewal. |
@@ -130,6 +131,24 @@ Filters whether referrals with a zero commission amount should be discarded. Ret
 
 ```php
 add_filter('fluent_affiliate/ignore_zero_amount_referral', '__return_false');
+```
+
+## `fluent_affiliate/ignore_zero_total_referral`
+
+Filters whether a referral is discarded when the order total is zero or less. This check is separate from `fluent_affiliate/ignore_zero_amount_referral`: a flat-rate commission ignores the order total, so a free order would otherwise still pay the full flat amount. Applies to `sale`, `recurring_sale`, `lifetime_sale` and `payment` referrals.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$ignore` | `bool` | Whether to discard the referral. Default `true`. |
+| `$data` | `array` | Referral data about to be saved, including `order_total`. |
+
+**Source:** `app/Modules/Integrations/BaseConnector.php`
+
+```php
+// Pay the flat commission on free orders too
+add_filter('fluent_affiliate/ignore_zero_total_referral', '__return_false');
 ```
 
 ## `fluent_affiliate/commission`

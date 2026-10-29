@@ -11,5 +11,6 @@ aside: false
 - **Edition:** <span class="pro-badge">PRO</span>
 - **Controller:** `ProSettingController@updateManager`
 - **Route source:** `fluent-affiliate-pro/app/Http/Routes/api.php`
+- **Access:** `SuperAdminPolicy` — WordPress administrators only (`manage_options`). Not delegable.
 
 <OAOperation operationId="updateManagers" specUrl="/openapi/public/settings/update-managers.json" />

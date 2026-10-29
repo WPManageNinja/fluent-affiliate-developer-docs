@@ -9,7 +9,7 @@ Email configuration, feature settings, integrations, referral config, page manag
 
 ## Authentication
 
-All settings routes are protected by `AdminPolicy` and require WordPress administrator access.
+Settings routes are protected by `AdminPolicy` (`manage_options` or the `manage_all_data` permission). Routes that control money or access — migrations wipe, license, affiliate managers and PayPal Payouts keys — use `SuperAdminPolicy` and need `manage_options`. Each operation page lists its policy.
 
 ## Endpoints
 
@@ -35,11 +35,11 @@ All settings routes are protected by `AdminPolicy` and require WordPress adminis
 | `GET` | `/settings/migrations` | Core | [List Migrations](/restapi/operations/settings/list-migrations) | `MigrationController@getAvailableMigrations` |
 | `POST` | `/settings/migrations/start` | Core | [Start Migration](/restapi/operations/settings/start-migration) | `MigrationController@startMigration` |
 | `GET` | `/settings/migrations/status` | Core | [Get Migration Status](/restapi/operations/settings/get-migration-status) | `MigrationController@getPollingStatus` |
-| `POST` | `/settings/migrations/wipe` | Core | [Wipe Data](/restapi/operations/settings/wipe-data) | `MigrationController@wipeCurrentData` |
 | `GET` | `/settings/migrations/statistics` | Core | [Get Migration Statistics](/restapi/operations/settings/get-migration-statistics) | `MigrationController@getMigrationStatistics` |
 | `GET` | `/settings/options/affiliates` | Core | [Get Affiliate Options](/restapi/operations/settings/get-affiliate-options) | `SettingController@getAffiliatesOptions` |
 | `GET` | `/settings/options/users` | Core | [Get User Options](/restapi/operations/settings/get-user-options) | `SettingController@getUsersOptions` |
 | `GET` | `/settings/registration-fields` | Core | [Get Registration Fields](/restapi/operations/settings/get-registration-fields) | `SettingController@getRegistrationFields` |
+| `POST` | `/settings/migrations/wipe` | Core | [Wipe Data](/restapi/operations/settings/wipe-data) | `MigrationController@wipeCurrentData` |
 | `GET` | `/settings/options/affiliate-groups` | <span class="pro-badge">PRO</span> | [Get Affiliate Group Options](/restapi/operations/settings/get-affiliate-group-options) | `ProSettingController@getAffiliateGroupsOptions` |
 | `POST` | `/settings/registration-fields` | <span class="pro-badge">PRO</span> | [Update Registration Fields](/restapi/operations/settings/update-registration-fields) | `ProSettingController@saveRegistrationFields` |
 | `GET` | `/settings/captcha` | <span class="pro-badge">PRO</span> | [Get Captcha Settings](/restapi/operations/settings/get-captcha-settings) | `ProSettingController@getCaptchaSettings` |
@@ -48,4 +48,9 @@ All settings routes are protected by `AdminPolicy` and require WordPress adminis
 | `GET` | `/settings/managers` | <span class="pro-badge">PRO</span> | [List Managers](/restapi/operations/settings/list-managers) | `ProSettingController@getManagers` |
 | `POST` | `/settings/managers` | <span class="pro-badge">PRO</span> | [Update Managers](/restapi/operations/settings/update-managers) | `ProSettingController@updateManager` |
 | `DELETE` | `/settings/managers/{id}` | <span class="pro-badge">PRO</span> | [Delete Manager](/restapi/operations/settings/delete-manager) | `ProSettingController@deleteManager` |
+| `GET` | `/settings/paypal-payouts` | <span class="pro-badge">PRO</span> | [Get PayPal Settings](/restapi/operations/settings/get-paypal-settings) | `PayPalSettingsController@get` |
+| `POST` | `/settings/paypal-payouts` | <span class="pro-badge">PRO</span> | [Update PayPal Settings](/restapi/operations/settings/update-paypal-settings) | `PayPalSettingsController@save` |
+| `DELETE` | `/settings/paypal-payouts` | <span class="pro-badge">PRO</span> | [Delete PayPal Settings](/restapi/operations/settings/delete-paypal-settings) | `PayPalSettingsController@delete` |
+| `POST` | `/settings/paypal-payouts/test` | <span class="pro-badge">PRO</span> | [Test PayPal Connection](/restapi/operations/settings/test-paypal-connection) | `PayPalSettingsController@test` |
+| `POST` | `/settings/paypal-payouts/webhook` | <span class="pro-badge">PRO</span> | [Register PayPal Webhook](/restapi/operations/settings/register-paypal-webhook) | `PayPalSettingsController@registerWebhook` |
 

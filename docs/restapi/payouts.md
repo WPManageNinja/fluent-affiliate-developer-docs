@@ -26,4 +26,8 @@ Payout routes are protected by `PayoutPolicy`. Admin users have full access; aff
 | `PATCH` | `/payouts/{id}/transactions/{transaction_id}` | Core | [Update Payout Transaction](/restapi/operations/payouts/update-payout-transaction) | `PayoutController@patchTransaction` |
 | `PATCH` | `/payouts/{id}/transactions/bulk-action` | Core | [Bulk Update Payout Transactions](/restapi/operations/payouts/bulk-update-payout-transactions) | `PayoutController@bulkPatchTransactions` |
 | `PATCH` | `/payouts/{id}` | Core | [Update Payout](/restapi/operations/payouts/update-payout) | `PayoutController@updatePayout` |
+| `POST` | `/payouts/{id}/paypal-send` | <span class="pro-badge">PRO</span> | [Send PayPal Payout](/restapi/operations/payouts/send-paypal-payout) | `PayPalPayoutController@sendPayout` |
+| `POST` | `/payouts/{id}/paypal-sync` | <span class="pro-badge">PRO</span> | [Sync PayPal Payout](/restapi/operations/payouts/sync-paypal-payout) | `PayPalPayoutController@syncPayout` |
+| `POST` | `/payouts/{id}/paypal-batch` | <span class="pro-badge">PRO</span> | [Recover PayPal Batch](/restapi/operations/payouts/recover-paypal-batch) | `PayPalPayoutController@recoverBatch` |
+| `POST` | `/payouts/{id}/paypal-not-sent` | <span class="pro-badge">PRO</span> | [Mark PayPal Payout Not Sent](/restapi/operations/payouts/mark-paypal-payout-not-sent) | `PayPalPayoutController@markNotSent` |
 

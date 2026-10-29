@@ -21,6 +21,8 @@ description: Filter hooks in the Portal category.
 | [`fluent_affiliate/portal/additional_sites`](#fluent-affiliate-portal-additional-sites) | Filters the list of additional sites shown in the affiliate portal share widget (Pro connected-sites feature). |
 | [`fluent_affiliate/portal_localize_data`](#fluent-affiliate-portal-localize-data) | Filters all JavaScript data passed to the affiliate portal SPA. |
 | [`fluent_affiliate/smartcode_fallback`](#fluent-affiliate-smartcode-fallback) | Filters the fallback output when a smart code is unrecognised. |
+| [`fluent_affiliate/smartcode_user_allowed_keys`](#fluent-affiliate-smartcode-user-allowed-keys) | Filters the WordPress user fields that the `user.*` smart codes (for example `user.first_name`) can read. |
+| [`fluent_affiliate/smartcode_user_allowed_meta_keys`](#fluent-affiliate-smartcode-user-allowed-meta-keys) | Filters the user meta keys that the `user.meta.*` smart codes (for example `user.meta.billing_company`) can read. |
 | [`fluent_affiliate/smartcode_group_callback_{dataKey}`](#fluent-affiliate-smartcode-group-callback-datakey) | Fires for an unrecognised smart code group, allowing third-party data keys. |
 
 ## `fluent_affiliate/portal_menu_items`
@@ -253,6 +255,44 @@ Filters the fallback output when a smart code is unrecognised.
 add_filter('fluent_affiliate/smartcode_fallback', function($original, $data) {
     return ''; // Remove unrecognised codes instead of leaving them visible.
 }, 10, 2);
+```
+
+## `fluent_affiliate/smartcode_user_allowed_keys`
+
+Filters the WordPress user fields that the `user.*` smart codes (for example `user.first_name`) can read. A key that is not in this list renders the fallback value. The list is closed by default because `WP_User::get()` can read any users column and any user meta, including the password hash.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$keys` | `array` | Allowed keys. Default `ID`, `first_name`, `last_name`, `display_name`, `user_email`, `user_login`, `user_url`. |
+
+**Source:** `app/Services/Libs/SmartCodeParser.php`
+
+```php
+add_filter('fluent_affiliate/smartcode_user_allowed_keys', function($keys) {
+    $keys[] = 'nickname';
+    return $keys;
+});
+```
+
+## `fluent_affiliate/smartcode_user_allowed_meta_keys`
+
+Filters the user meta keys that the `user.meta.*` smart codes (for example `user.meta.billing_company`) can read. The list is empty by default, so no meta key renders until a site adds it. User meta can hold session tokens, application passwords and secrets of other plugins, so add only keys that are safe to show in emails.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$metaKeys` | `array` | Allowed meta keys. Default `[]`. |
+
+**Source:** `app/Services/Libs/SmartCodeParser.php`
+
+```php
+add_filter('fluent_affiliate/smartcode_user_allowed_meta_keys', function($metaKeys) {
+    $metaKeys[] = 'billing_company';
+    return $metaKeys;
+});
 ```
 
 ## `fluent_affiliate/smartcode_group_callback_{dataKey}`

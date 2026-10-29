@@ -10,6 +10,7 @@ description: Action hooks in the Affiliates category.
 | Hook | Description |
 |------|-------------|
 | [`fluent_affiliate/admin_app_rendering`](#fluent-affiliate-admin-app-rendering) | Fired just before the admin SPA is rendered. |
+| [`fluent-affiliate_loading_app`](#fluent-affiliate-loading-app) | Fired while the admin SPA assets are enqueued, after the admin stylesheets and before the admin app script. |
 | [`fluent_affiliate/affiliate_updated`](#fluent-affiliate-affiliate-updated) | Fired after an affiliate record is updated by an admin. |
 | [`fluent_affiliate/before_delete_affiliate`](#fluent-affiliate-before-delete-affiliate) | Fires immediately before an affiliate is permanently deleted. |
 | [`fluent_affiliate/after_delete_affiliate`](#fluent-affiliate-after-delete-affiliate) | Fires after an affiliate has been permanently deleted. |
@@ -25,6 +26,18 @@ Fired just before the admin SPA is rendered. Useful for adding custom scripts or
 ```php
 add_action('fluent_affiliate/admin_app_rendering', function() {
     wp_enqueue_script('my-admin-extension', MY_PLUGIN_URL . 'admin-ext.js', ['jquery'], '1.0', true);
+});
+```
+
+## `fluent-affiliate_loading_app`
+
+Fired while the admin SPA assets are enqueued, after the admin stylesheets and before the admin app script. Use it to enqueue your own scripts or styles that extend the FluentAffiliate admin app. The `fluent-affiliate` prefix is the plugin slug from `config/app.php`.
+
+**Source:** `app/Hooks/Handlers/AdminMenuHandler.php`
+
+```php
+add_action('fluent-affiliate_loading_app', function() {
+    wp_enqueue_script('my-fa-addon', plugins_url('admin.js', __FILE__), [], '1.0.0', true);
 });
 ```
 

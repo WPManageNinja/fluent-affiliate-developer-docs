@@ -86,53 +86,47 @@
                   "properties": {
                     "affiliates": {
                       "type": "array",
+                      "description": "CSV rows. Text cells are escaped against spreadsheet formulas; amounts are strings with two decimals.",
                       "items": {
                         "type": "object",
                         "properties": {
                           "id": {
                             "type": "integer"
                           },
-                          "user_id": {
-                            "type": "integer"
-                          },
-                          "status": {
-                            "type": "string",
-                            "enum": [
-                              "active",
-                              "pending",
-                              "rejected",
-                              "inactive"
-                            ]
-                          },
-                          "affiliate_code": {
+                          "full_name": {
                             "type": "string"
                           },
-                          "rate": {
+                          "email": {
+                            "type": "string"
+                          },
+                          "payment_email": {
                             "type": "string"
                           },
                           "rate_type": {
+                            "type": "string"
+                          },
+                          "rate": {
+                            "type": "number"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "total_earnings": {
                             "type": "string",
-                            "enum": [
-                              "percentage",
-                              "flat"
-                            ]
+                            "example": "90.90"
                           },
-                          "earnings_balance": {
-                            "type": "string"
+                          "unpaid_earnings": {
+                            "type": "string",
+                            "example": "0.00"
                           },
-                          "total_paid": {
-                            "type": "string"
+                          "referrals": {
+                            "type": "integer"
                           },
-                          "total_unpaid": {
-                            "type": "string"
+                          "visits": {
+                            "type": "integer"
                           },
                           "created_at": {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          "updated_at": {
-                            "type": "string",
-                            "format": "date-time"
+                            "type": "string"
                           }
                         }
                       }

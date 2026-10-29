@@ -11,5 +11,6 @@ aside: false
 - **Edition:** Core
 - **Controller:** `AffiliateController@getTransactions`
 - **Route source:** `app/Http/Routes/api.php`
+- **Access:** `AffiliatePolicy` — checked by `AffiliatePolicy::getTransactions()`.
 
 <OAOperation operationId="listAffiliateTransactions" specUrl="/openapi/public/affiliates/list-affiliate-transactions.json" />
