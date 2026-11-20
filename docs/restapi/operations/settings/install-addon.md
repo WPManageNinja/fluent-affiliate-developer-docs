@@ -1,5 +1,5 @@
 ---
-title: Install Addon
+title: "Install Addon"
 description: "Install an addon."
 outline: false
 aside: false

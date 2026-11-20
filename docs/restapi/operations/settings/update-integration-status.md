@@ -1,5 +1,5 @@
 ---
-title: Update Integration Status
+title: "Update Integration Status"
 description: "Enable or disable an integration."
 outline: false
 aside: false

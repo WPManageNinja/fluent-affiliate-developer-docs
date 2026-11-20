@@ -7,7 +7,7 @@ description: Developer introduction to FluentAffiliate — architecture, authent
 
 ## Overview
 
-FluentAffiliate is a self-hosted WordPress affiliate program management plugin by WPManageNinja (v1.7.0). It requires PHP 7.4+ and WordPress 5.0+. The plugin manages affiliates, tracks referrals, processes payouts, and integrates with e-commerce plugins through a two-class connector pattern.
+FluentAffiliate is a self-hosted WordPress affiliate program management plugin by WPManageNinja (v1.8.0). It requires PHP 7.4+ and WordPress 6.0+. The plugin manages affiliates, tracks referrals, processes payouts, and integrates with e-commerce plugins through a two-class connector pattern. It also includes an [MCP server](/mcp/) for AI agents (WordPress 6.9+ and an MCP adapter).
 
 All data is stored in custom database tables (prefixed `fa_`) rather than WordPress post types. There is no dependency on external SaaS services — the plugin runs entirely within your WordPress installation.
 
@@ -217,5 +217,6 @@ Endpoints and hooks that require Pro are labeled <span class="pro-badge">PRO</sp
 - [Action Hooks](/hooks/actions/)
 - [Filter Hooks](/hooks/filters/)
 - [REST API Overview](/restapi/)
+- [MCP Server](/mcp/) and [MCP guide](/guides/mcp)
 - [Custom Integration Guide](/guides/custom-integration)
 - [Code Snippets](/guides/code-snippets)

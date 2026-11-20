@@ -1,6 +1,6 @@
 ---
-title: Affiliates
-description: Filter hooks in the Affiliates category.
+title: "Affiliates"
+description: "Filter hooks in the Affiliates category."
 ---
 
 # Affiliates

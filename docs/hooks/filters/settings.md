@@ -1,6 +1,6 @@
 ---
-title: Settings
-description: Filter hooks in the Settings category.
+title: "Settings"
+description: "Filter hooks in the Settings category."
 ---
 
 # Settings

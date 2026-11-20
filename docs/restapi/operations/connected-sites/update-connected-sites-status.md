@@ -1,5 +1,5 @@
 ---
-title: Update Connected Sites Status
+title: "Update Connected Sites Status"
 description: "Update the global connected-sites status."
 outline: false
 aside: false

@@ -1,5 +1,5 @@
 ---
-title: Get Affiliate Stats
+title: "Get Affiliate Stats"
 description: "Get summary stats for an affiliate."
 outline: false
 aside: false

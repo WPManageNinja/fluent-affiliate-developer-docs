@@ -1,6 +1,6 @@
 ---
-title: Permissions (Pro)
-description: Filter hooks in the Permissions (Pro) category.
+title: "Permissions (Pro)"
+description: "Filter hooks in the Permissions (Pro) category."
 ---
 
 # Permissions (Pro)

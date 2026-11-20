@@ -1,5 +1,5 @@
 ---
-title: Get Portal Settings
+title: "Get Portal Settings"
 description: "Get the authenticated affiliate's portal settings."
 outline: false
 aside: false

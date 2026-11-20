@@ -1,6 +1,6 @@
 ---
-title: Portal
-description: Filter hooks in the Portal category.
+title: "Portal"
+description: "Filter hooks in the Portal category."
 ---
 
 # Portal
@@ -27,21 +27,23 @@ description: Filter hooks in the Portal category.
 
 ## `fluent_affiliate/portal_menu_items`
 
-Filters the navigation items shown in the affiliate portal sidebar.
+Filters the navigation items shown in the affiliate portal sidebar. Items are keyed by slug; each has `title`, `enabled`, `icon` (inline SVG markup) and `route` (`['name' => <portal route name>]`).
 
 **Parameters**
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `$items` | `array` | Portal menu items. |
+| `$items` | `array` | Portal menu items keyed by slug: `home`, `links`, `creatives`, `referrals`, `payouts`, `visits`, `settings`. |
+| `$affiliate` | `Affiliate|null` | The affiliate the portal is shown to, when known. |
 
 **Source:** `app/Helper/Helper.php`
 
 ```php
-add_filter('fluent_affiliate/portal_menu_items', function($items) {
-    $items[] = ['title' => 'My Custom Page', 'route' => 'custom-page', 'icon' => 'el-icon-document'];
+add_filter('fluent_affiliate/portal_menu_items', function($items, $affiliate) {
+    // Hide the promo materials item
+    $items['creatives']['enabled'] = false;
     return $items;
-});
+}, 10, 2);
 ```
 
 ## `fluent_affiliate/portal_page_url`

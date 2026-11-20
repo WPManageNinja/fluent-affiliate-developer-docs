@@ -1,5 +1,5 @@
 ---
-title: Get Email Config
+title: "Get Email Config"
 description: "Get email notification configuration."
 outline: false
 aside: false

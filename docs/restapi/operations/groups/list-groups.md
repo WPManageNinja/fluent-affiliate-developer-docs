@@ -1,5 +1,5 @@
 ---
-title: List Groups
+title: "List Groups"
 description: "List all affiliate groups."
 outline: false
 aside: false

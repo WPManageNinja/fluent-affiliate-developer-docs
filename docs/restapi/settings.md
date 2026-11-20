@@ -1,6 +1,6 @@
 ---
-title: Settings API
-description: Email configuration, feature settings, integrations, referral config, page management, migrations, registration fields, captcha, and affiliate managers.
+title: "Settings API"
+description: "Email configuration, feature settings, integrations, referral config, page management, migrations, registration fields, captcha, and affiliate managers."
 ---
 
 # Settings API

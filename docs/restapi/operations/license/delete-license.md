@@ -1,5 +1,5 @@
 ---
-title: Delete License
+title: "Delete License"
 description: "Deactivate the Pro license."
 outline: false
 aside: false

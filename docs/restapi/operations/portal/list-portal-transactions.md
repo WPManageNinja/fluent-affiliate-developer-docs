@@ -1,5 +1,5 @@
 ---
-title: List Portal Transactions
+title: "List Portal Transactions"
 description: "Get the authenticated affiliate's payout transactions."
 outline: false
 aside: false

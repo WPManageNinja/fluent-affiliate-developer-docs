@@ -1,5 +1,5 @@
 ---
-title: Get Referral
+title: "Get Referral"
 description: "Retrieve a single referral."
 outline: false
 aside: false

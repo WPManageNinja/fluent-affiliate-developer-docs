@@ -1,6 +1,6 @@
 ---
-title: Affiliate Model
-description: Represents a registered affiliate. Central model in FluentAffiliate.
+title: "Affiliate Model"
+description: "Represents a registered affiliate. Central model in FluentAffiliate."
 ---
 
 # Affiliate

@@ -1,5 +1,5 @@
 ---
-title: Get License
+title: "Get License"
 description: "Get the current Pro license status."
 outline: false
 aside: false

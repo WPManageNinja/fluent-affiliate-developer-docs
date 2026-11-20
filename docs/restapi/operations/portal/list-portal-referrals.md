@@ -1,5 +1,5 @@
 ---
-title: List Portal Referrals
+title: "List Portal Referrals"
 description: "Get the authenticated affiliate's referrals."
 outline: false
 aside: false

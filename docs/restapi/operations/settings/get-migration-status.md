@@ -1,5 +1,5 @@
 ---
-title: Get Migration Status
+title: "Get Migration Status"
 description: "Poll the status of a running migration."
 outline: false
 aside: false

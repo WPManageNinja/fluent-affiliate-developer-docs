@@ -1,5 +1,5 @@
 ---
-title: Update Referral Config
+title: "Update Referral Config"
 description: "Save the referral program configuration."
 outline: false
 aside: false

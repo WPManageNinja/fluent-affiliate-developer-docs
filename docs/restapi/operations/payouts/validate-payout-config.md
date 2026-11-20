@@ -1,5 +1,5 @@
 ---
-title: Validate Payout Config
+title: "Validate Payout Config"
 description: "Validate a payout configuration before processing."
 outline: false
 aside: false

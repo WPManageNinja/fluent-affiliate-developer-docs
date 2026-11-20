@@ -1,5 +1,5 @@
 ---
-title: Save License
+title: "Save License"
 description: "Save / activate a Pro license key."
 outline: false
 aside: false

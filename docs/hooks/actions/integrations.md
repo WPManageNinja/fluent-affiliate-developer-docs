@@ -1,6 +1,6 @@
 ---
-title: Integrations
-description: Action hooks in the Integrations category.
+title: "Integrations"
+description: "Action hooks in the Integrations category."
 ---
 
 # Integrations

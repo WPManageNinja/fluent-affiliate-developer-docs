@@ -1,5 +1,5 @@
 ---
-title: Delete Group
+title: "Delete Group"
 description: "Delete an affiliate group."
 outline: false
 aside: false

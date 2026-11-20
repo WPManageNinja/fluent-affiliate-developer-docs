@@ -1,6 +1,6 @@
 ---
-title: Creatives API
-description: Creative asset management (admin) and portal creative retrieval for authenticated affiliates.
+title: "Creatives API"
+description: "Creative asset management (admin) and portal creative retrieval for authenticated affiliates."
 ---
 
 # Creatives API <span class="pro-badge">PRO</span>

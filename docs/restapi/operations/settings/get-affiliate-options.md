@@ -1,5 +1,5 @@
 ---
-title: Get Affiliate Options
+title: "Get Affiliate Options"
 description: "Get affiliate options for select inputs."
 outline: false
 aside: false

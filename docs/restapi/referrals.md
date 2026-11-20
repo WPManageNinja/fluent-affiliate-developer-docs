@@ -1,6 +1,6 @@
 ---
-title: Referrals API
-description: Referral listing, manual creation, updates, deletion, and CSV export.
+title: "Referrals API"
+description: "Referral listing, manual creation, updates, deletion, and CSV export."
 ---
 
 # Referrals API

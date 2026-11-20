@@ -1,6 +1,6 @@
 ---
-title: Groups (Pro)
-description: Action hooks in the Groups (Pro) category.
+title: "Groups (Pro)"
+description: "Action hooks in the Groups (Pro) category."
 ---
 
 # Groups (Pro)

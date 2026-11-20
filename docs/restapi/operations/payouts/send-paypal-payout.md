@@ -1,5 +1,5 @@
 ---
-title: Send PayPal Payout
+title: "Send PayPal Payout"
 description: "Queue a PayPal payout for sending. Only the transactions in `processing` status are sent, in one PayPal batch (15,000 items at most, one currency). The payout moves to `sending`, so a double request sends it once. Rejected when the payout was already sent, or when PayPal may already have it (use `paypal-batch` then)."
 outline: false
 aside: false

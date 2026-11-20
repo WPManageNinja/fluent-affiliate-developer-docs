@@ -1,6 +1,6 @@
 ---
-title: Transaction Model
-description: An individual payout transaction for a single affiliate within a payout batch.
+title: "Transaction Model"
+description: "An individual payout transaction for a single affiliate within a payout batch."
 ---
 
 # Transaction

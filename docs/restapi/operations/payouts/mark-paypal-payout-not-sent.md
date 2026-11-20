@@ -1,5 +1,5 @@
 ---
-title: Mark PayPal Payout Not Sent
+title: "Mark PayPal Payout Not Sent"
 description: "Mark an unconfirmed PayPal payout as not sent, after the admin checked that the payout is not in the PayPal account. Its open transactions become `failed`, so they can be paid by hand or removed."
 outline: false
 aside: false

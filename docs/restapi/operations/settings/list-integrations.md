@@ -1,5 +1,5 @@
 ---
-title: List Integrations
+title: "List Integrations"
 description: "List registered integrations."
 outline: false
 aside: false

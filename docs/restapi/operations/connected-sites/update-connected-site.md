@@ -1,5 +1,5 @@
 ---
-title: Update Connected Site
+title: "Update Connected Site"
 description: "Update a single connected site config."
 outline: false
 aside: false

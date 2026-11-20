@@ -1,5 +1,5 @@
 ---
-title: Get Group Statistics
+title: "Get Group Statistics"
 description: "Get detailed statistics for a group."
 outline: false
 aside: false

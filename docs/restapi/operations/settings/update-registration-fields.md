@@ -1,5 +1,5 @@
 ---
-title: Update Registration Fields
+title: "Update Registration Fields"
 description: "Save affiliate registration field configuration."
 outline: false
 aside: false

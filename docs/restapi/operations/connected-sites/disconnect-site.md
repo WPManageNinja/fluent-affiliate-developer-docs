@@ -1,5 +1,5 @@
 ---
-title: Disconnect Site
+title: "Disconnect Site"
 description: "Disconnect a connected site."
 outline: false
 aside: false

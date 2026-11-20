@@ -1,5 +1,5 @@
 ---
-title: List Email Templates
+title: "List Email Templates"
 description: "List all notification email templates."
 outline: false
 aside: false

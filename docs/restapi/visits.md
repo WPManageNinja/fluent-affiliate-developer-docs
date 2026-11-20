@@ -1,6 +1,6 @@
 ---
-title: Visits API
-description: Affiliate visit tracking records — listing and CSV export.
+title: "Visits API"
+description: "Affiliate visit tracking records — listing and CSV export."
 ---
 
 # Visits API

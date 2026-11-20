@@ -1,6 +1,6 @@
 ---
-title: Creative Model (Pro)
-description: A marketing creative asset (banner, image, or text) managed in FluentAffiliate Pro.
+title: "Creative Model (Pro)"
+description: "A marketing creative asset (banner, image, or text) managed in FluentAffiliate Pro."
 ---
 
 # Creative <span class="pro-badge">PRO</span>

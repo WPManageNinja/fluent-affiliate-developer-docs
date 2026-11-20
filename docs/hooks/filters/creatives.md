@@ -1,6 +1,6 @@
 ---
-title: Creatives (Pro)
-description: Filter hooks in the Creatives (Pro) category.
+title: "Creatives (Pro)"
+description: "Filter hooks in the Creatives (Pro) category."
 ---
 
 # Creatives (Pro)

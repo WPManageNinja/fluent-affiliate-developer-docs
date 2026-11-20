@@ -1,5 +1,5 @@
 ---
-title: Get User Options
+title: "Get User Options"
 description: "Get WordPress user options for select inputs."
 outline: false
 aside: false

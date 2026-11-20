@@ -1,5 +1,5 @@
 ---
-title: Get Migration Statistics
+title: "Get Migration Statistics"
 description: "Get migration statistics."
 outline: false
 aside: false

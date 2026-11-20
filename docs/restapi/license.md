@@ -1,6 +1,6 @@
 ---
-title: License API
-description: Pro license status retrieval, activation, and deactivation.
+title: "License API"
+description: "Pro license status retrieval, activation, and deactivation."
 ---
 
 # License API <span class="pro-badge">PRO</span>
@@ -9,7 +9,7 @@ Pro license status retrieval, activation, and deactivation.
 
 ## Authentication
 
-License routes are protected by `AdminPolicy` and require WordPress administrator access.
+License routes are protected by `SuperAdminPolicy` and require WordPress administrator access (`manage_options`).
 
 ## Endpoints
 

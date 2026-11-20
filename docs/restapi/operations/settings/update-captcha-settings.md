@@ -1,5 +1,5 @@
 ---
-title: Update Captcha Settings
+title: "Update Captcha Settings"
 description: "Save captcha settings. Enabling a provider is rejected unless its keys have passed the validate-keys check first."
 outline: false
 aside: false

@@ -1,6 +1,6 @@
 ---
-title: Visit Model
-description: Tracks each click of an affiliate referral link.
+title: "Visit Model"
+description: "Tracks each click of an affiliate referral link."
 ---
 
 # Visit

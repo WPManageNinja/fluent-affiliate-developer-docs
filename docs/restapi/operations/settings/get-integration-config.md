@@ -1,5 +1,5 @@
 ---
-title: Get Integration Config
+title: "Get Integration Config"
 description: "Get configuration for an integration."
 outline: false
 aside: false

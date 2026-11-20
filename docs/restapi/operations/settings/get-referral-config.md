@@ -1,5 +1,5 @@
 ---
-title: Get Referral Config
+title: "Get Referral Config"
 description: "Get the referral program configuration."
 outline: false
 aside: false

@@ -94,6 +94,12 @@
     "test-paypal-connection",
     "register-paypal-webhook"
   ],
+  "mcp": [
+    "get-mcp-settings",
+    "update-mcp-settings",
+    "enable-mcp-hub",
+    "install-fluenthub"
+  ],
   "portal": [
     "get-portal-bootstrap",
     "get-portal-stats",

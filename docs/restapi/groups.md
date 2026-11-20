@@ -1,6 +1,6 @@
 ---
-title: Affiliate Groups API
-description: Affiliate group CRUD operations, member listing, overview stats, and group statistics.
+title: "Affiliate Groups API"
+description: "Affiliate group CRUD operations, member listing, overview stats, and group statistics."
 ---
 
 # Affiliate Groups API <span class="pro-badge">PRO</span>

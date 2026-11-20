@@ -1,5 +1,5 @@
 ---
-title: Update Affiliate Status
+title: "Update Affiliate Status"
 description: "Change an affiliate's status."
 outline: false
 aside: false

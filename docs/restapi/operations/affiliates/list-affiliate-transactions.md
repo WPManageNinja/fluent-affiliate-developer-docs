@@ -1,5 +1,5 @@
 ---
-title: List Affiliate Transactions
+title: "List Affiliate Transactions"
 description: "List payout transactions for an affiliate."
 outline: false
 aside: false

@@ -1,5 +1,5 @@
 ---
-title: Create Referral
+title: "Create Referral"
 description: "Manually create a referral."
 outline: false
 aside: false

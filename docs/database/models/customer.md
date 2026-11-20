@@ -1,6 +1,6 @@
 ---
-title: Customer Model
-description: A customer who made a purchase through an affiliate link.
+title: "Customer Model"
+description: "A customer who made a purchase through an affiliate link."
 ---
 
 # Customer

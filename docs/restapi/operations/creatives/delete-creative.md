@@ -1,5 +1,5 @@
 ---
-title: Delete Creative
+title: "Delete Creative"
 description: "Delete a creative."
 outline: false
 aside: false

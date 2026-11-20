@@ -1,6 +1,6 @@
 ---
-title: Referrals
-description: Filter hooks in the Referrals category.
+title: "Referrals"
+description: "Filter hooks in the Referrals category."
 ---
 
 # Referrals

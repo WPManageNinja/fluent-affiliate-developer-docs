@@ -1,5 +1,5 @@
 ---
-title: Save Integration Config
+title: "Save Integration Config"
 description: "Save integration configuration."
 outline: false
 aside: false

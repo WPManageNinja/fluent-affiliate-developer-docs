@@ -1,5 +1,5 @@
 ---
-title: Update Group
+title: "Update Group"
 description: "Update an affiliate group."
 outline: false
 aside: false

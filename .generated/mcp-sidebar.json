@@ -1,0 +1,96 @@
+[
+  {
+    "title": "Context",
+    "tools": [
+      {
+        "slug": "get-affiliate-context",
+        "label": "Get Affiliate Context"
+      }
+    ]
+  },
+  {
+    "title": "Affiliates",
+    "tools": [
+      {
+        "slug": "list-affiliates",
+        "label": "List Affiliates"
+      },
+      {
+        "slug": "get-affiliate",
+        "label": "Get Affiliate"
+      },
+      {
+        "slug": "create-affiliate",
+        "label": "Create Affiliate"
+      },
+      {
+        "slug": "update-affiliate",
+        "label": "Update Affiliate"
+      }
+    ]
+  },
+  {
+    "title": "Referrals",
+    "tools": [
+      {
+        "slug": "list-referrals",
+        "label": "List Referrals"
+      },
+      {
+        "slug": "get-referral",
+        "label": "Get Referral"
+      },
+      {
+        "slug": "save-referral",
+        "label": "Save Referral"
+      },
+      {
+        "slug": "update-referrals",
+        "label": "Update Referrals"
+      }
+    ]
+  },
+  {
+    "title": "Visits",
+    "tools": [
+      {
+        "slug": "list-visits",
+        "label": "List Visits"
+      }
+    ]
+  },
+  {
+    "title": "Payouts",
+    "tools": [
+      {
+        "slug": "list-payouts",
+        "label": "List Payouts"
+      },
+      {
+        "slug": "get-payout",
+        "label": "Get Payout"
+      },
+      {
+        "slug": "create-payout",
+        "label": "Create Payout"
+      },
+      {
+        "slug": "update-transaction",
+        "label": "Update Transaction"
+      },
+      {
+        "slug": "remove-transaction",
+        "label": "Remove Transaction"
+      }
+    ]
+  },
+  {
+    "title": "Reports",
+    "tools": [
+      {
+        "slug": "get-report",
+        "label": "Get Report"
+      }
+    ]
+  }
+]

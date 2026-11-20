@@ -1,5 +1,5 @@
 ---
-title: Create Group
+title: "Create Group"
 description: "Create a new affiliate group."
 outline: false
 aside: false

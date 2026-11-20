@@ -1,5 +1,5 @@
 ---
-title: Register PayPal Webhook
+title: "Register PayPal Webhook"
 description: "Register the webhook at PayPal for a mode (`mode`: `test` or `live`) and save its ID. Without a webhook, payout results arrive with the hourly check."
 outline: false
 aside: false

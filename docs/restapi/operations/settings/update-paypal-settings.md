@@ -1,5 +1,5 @@
 ---
-title: Update PayPal Settings
+title: "Update PayPal Settings"
 description: "Save the PayPal Payouts settings (`settings.mode` and the `test_*` / `live_*` client ID and secret). Changed key pairs are checked with PayPal before anything is saved. A webhook is registered for each configured mode that does not have one; problems are returned in `notices`. Send the masked secret back unchanged to keep the stored secret."
 outline: false
 aside: false

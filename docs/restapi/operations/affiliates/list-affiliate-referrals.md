@@ -1,5 +1,5 @@
 ---
-title: List Affiliate Referrals
+title: "List Affiliate Referrals"
 description: "List referrals for an affiliate."
 outline: false
 aside: false

@@ -1,5 +1,5 @@
 ---
-title: Update Portal Settings
+title: "Update Portal Settings"
 description: "Update the authenticated affiliate's portal settings."
 outline: false
 aside: false

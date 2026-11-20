@@ -1,5 +1,5 @@
 ---
-title: Validate Captcha Keys
+title: "Validate Captcha Keys"
 description: "Validate a provider's captcha site/secret key pair against the provider's API before saving."
 outline: false
 aside: false

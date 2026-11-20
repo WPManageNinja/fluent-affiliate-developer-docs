@@ -1,5 +1,5 @@
 ---
-title: Get Affiliate CRM Options
+title: "Get Affiliate CRM Options"
 description: "Search FluentCRM tag or list options for the taxonomy picker. Pass `type=tags` (default) or `type=lists` plus an optional `search` term."
 outline: false
 aside: false

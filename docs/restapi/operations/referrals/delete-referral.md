@@ -1,5 +1,5 @@
 ---
-title: Delete Referral
+title: "Delete Referral"
 description: "Delete a referral."
 outline: false
 aside: false

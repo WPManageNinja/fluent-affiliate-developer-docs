@@ -152,6 +152,7 @@ export default {
         { value: stats.hooks,        label: 'Hooks' },
         { value: stats.tables,       label: 'DB Tables' },
         { value: stats.openapiSpecs, label: 'OpenAPI Specs' },
+        { value: stats.mcpTools,     label: 'MCP Tools' },
       ]
     },
   },

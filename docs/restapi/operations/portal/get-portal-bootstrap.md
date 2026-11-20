@@ -1,5 +1,5 @@
 ---
-title: Get Portal Bootstrap
+title: "Get Portal Bootstrap"
 description: "Get the data the affiliate portal app boots with: site info and the affiliate's share link parameters, additional sites, translated strings, the user, branded coupons, currency, menu items, QR code settings and date format. Only for an `active` affiliate. Filtered by `fluent_affiliate/portal_localize_data`."
 outline: false
 aside: false

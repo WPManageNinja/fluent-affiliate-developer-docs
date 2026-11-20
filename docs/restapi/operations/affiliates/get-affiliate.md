@@ -1,5 +1,5 @@
 ---
-title: Get Affiliate
+title: "Get Affiliate"
 description: "Retrieve a single affiliate by ID."
 outline: false
 aside: false
