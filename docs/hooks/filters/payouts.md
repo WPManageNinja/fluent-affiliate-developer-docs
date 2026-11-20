@@ -1,6 +1,6 @@
 ---
-title: Payouts
-description: Filter hooks in the Payouts category.
+title: "Payouts"
+description: "Filter hooks in the Payouts category."
 ---
 
 # Payouts
@@ -85,7 +85,7 @@ Filters the validated payout configuration. The same filter serves the review pr
 | `$validated` | `array` | `payable_affiliates` (Collection), `payable_total_amount` (float), `held`, and `config` (`start_date`, `end_date`, `min_payout`, `affiliate_ids`, `payout_method`, `ignore_holding_period`). |
 | `$config` | `array` | The raw payout config from the request. |
 
-**Source:** `app/Http/Controllers/PayoutController.php`
+**Source:** `app/Services/PayoutService.php`
 
 ```php
 add_filter('fluent_affiliate/payout/validated_config', function($validated, $config) {
@@ -116,7 +116,7 @@ Filters the payout data array before the payout record is created.
 | `$dataConfig` | `array` | Payout configuration from the request. |
 | `$affiliates` | `array` | Affiliates being included. |
 
-**Source:** `app/Http/Controllers/PayoutController.php`
+**Source:** `app/Services/PayoutService.php`
 
 ```php
 add_filter('fluent_affiliate/payout/before_create', function($payoutData, $dataConfig, $affiliates) {
@@ -137,7 +137,7 @@ Fires after the payout record is created but before referrals are processed into
 | `$affiliates` | `array` | Affiliates being included in the payout. |
 | `$dataConfig` | `array` | Payout configuration from the request. |
 
-**Source:** `app/Http/Controllers/PayoutController.php`
+**Source:** `app/Services/PayoutService.php`
 
 ```php
 add_filter('fluent_affiliate/payout/before_processing', function($payout, $affiliates, $dataConfig) {

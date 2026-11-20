@@ -1,5 +1,5 @@
 ---
-title: Recover PayPal Batch
+title: "Recover PayPal Batch"
 description: "Recover a lost PayPal batch: save the PayPal `batch_id` and settle the transactions from it. The batch must carry this payout's sender batch ID."
 outline: false
 aside: false

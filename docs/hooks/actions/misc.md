@@ -1,6 +1,6 @@
 ---
-title: Miscellaneous
-description: Action hooks in the Miscellaneous category.
+title: "Miscellaneous"
+description: "Action hooks in the Miscellaneous category."
 ---
 
 # Miscellaneous

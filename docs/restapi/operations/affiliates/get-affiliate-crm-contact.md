@@ -1,5 +1,5 @@
 ---
-title: Get Affiliate CRM Contact
+title: "Get Affiliate CRM Contact"
 description: "Get the FluentCRM contact linked to an affiliate, with its current tags and lists. Requires FluentCRM to be active and the `fcrm_read_contacts` capability."
 outline: false
 aside: false

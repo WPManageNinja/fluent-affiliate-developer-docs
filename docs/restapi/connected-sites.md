@@ -1,6 +1,6 @@
 ---
-title: Connected Sites API
-description: Connected site configuration management, token issuance, and site disconnect operations.
+title: "Connected Sites API"
+description: "Connected site configuration management, token issuance, and site disconnect operations."
 ---
 
 # Connected Sites API <span class="pro-badge">PRO</span>

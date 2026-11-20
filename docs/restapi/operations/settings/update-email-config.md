@@ -1,5 +1,5 @@
 ---
-title: Update Email Config
+title: "Update Email Config"
 description: "Update email notification configuration."
 outline: false
 aside: false

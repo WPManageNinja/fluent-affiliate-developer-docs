@@ -1,5 +1,5 @@
 ---
-title: Delete Affiliate
+title: "Delete Affiliate"
 description: "Permanently delete an affiliate."
 outline: false
 aside: false

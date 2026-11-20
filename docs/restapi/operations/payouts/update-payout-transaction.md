@@ -1,5 +1,5 @@
 ---
-title: Update Payout Transaction
+title: "Update Payout Transaction"
 description: "Update a payout transaction."
 outline: false
 aside: false

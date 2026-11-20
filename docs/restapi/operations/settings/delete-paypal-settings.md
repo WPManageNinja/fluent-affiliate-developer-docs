@@ -1,5 +1,5 @@
 ---
-title: Delete PayPal Settings
+title: "Delete PayPal Settings"
 description: "Remove the PayPal keys. The registered webhooks are removed at PayPal first; the keys are removed even when PayPal cannot be reached."
 outline: false
 aside: false

@@ -23,6 +23,12 @@ const MODULE_ORDER: Record<string, string[]> = existsSync(moduleOrderPath)
   ? JSON.parse(readFileSync(moduleOrderPath, 'utf8'))
   : {}
 
+// MCP tool groups for the /mcp/ sidebar, written by scripts/generate-docs.mjs.
+const mcpSidebarPath = join(generatedDir, 'mcp-sidebar.json')
+const MCP_SIDEBAR: Array<{ title: string; tools: Array<{ slug: string; label: string }> }> = existsSync(mcpSidebarPath)
+  ? JSON.parse(readFileSync(mcpSidebarPath, 'utf8'))
+  : []
+
 // Home page counts, written by scripts/generate-docs.mjs. Read here rather than
 // imported in DocsHome.vue: vite.assetsInclude turns *.json imports into URLs.
 const statsPath = join(generatedDir, 'stats.json')
@@ -66,34 +72,14 @@ const databaseSidebar = [
   },
 ]
 
-const actionHookPages = [
-  { text: 'Affiliates', link: '/hooks/actions/affiliates' },
-  { text: 'Groups (Pro)', link: '/hooks/actions/groups' },
-  { text: 'Referrals', link: '/hooks/actions/referrals' },
-  { text: 'Payouts', link: '/hooks/actions/payouts' },
-  { text: 'Portal', link: '/hooks/actions/portal' },
-  { text: 'Integrations', link: '/hooks/actions/integrations' },
-  { text: 'Creatives (Pro)', link: '/hooks/actions/creatives' },
-  ...(existsSync(join(projectRoot, 'docs', 'hooks', 'actions', 'misc.md'))
-    ? [{ text: 'Miscellaneous', link: '/hooks/actions/misc' }]
-    : []),
-]
+// Hook category pages, written by scripts/generate-docs.mjs in sidebar order.
+const hookPagesPath = join(generatedDir, 'hook-pages.json')
+const HOOK_PAGES: { actions: Array<{ cat: string; title: string }>; filters: Array<{ cat: string; title: string }> } =
+  existsSync(hookPagesPath) ? JSON.parse(readFileSync(hookPagesPath, 'utf8')) : { actions: [], filters: [] }
 
-const filterHookPages = [
-  { text: 'Affiliates', link: '/hooks/filters/affiliates' },
-  { text: 'Groups (Pro)', link: '/hooks/filters/groups' },
-  { text: 'Referrals', link: '/hooks/filters/referrals' },
-  { text: 'Payouts', link: '/hooks/filters/payouts' },
-  { text: 'Permissions (Pro)', link: '/hooks/filters/permissions' },
-  { text: 'Portal', link: '/hooks/filters/portal' },
-  { text: 'Settings', link: '/hooks/filters/settings' },
-  { text: 'Auth', link: '/hooks/filters/auth' },
-  { text: 'Integrations', link: '/hooks/filters/integrations' },
-  { text: 'Creatives (Pro)', link: '/hooks/filters/creatives' },
-  ...(existsSync(join(projectRoot, 'docs', 'hooks', 'filters', 'misc.md'))
-    ? [{ text: 'Miscellaneous', link: '/hooks/filters/misc' }]
-    : []),
-]
+const actionHookPages = HOOK_PAGES.actions.map(({ cat, title }) => ({ text: title, link: `/hooks/actions/${cat}` }))
+
+const filterHookPages = HOOK_PAGES.filters.map(({ cat, title }) => ({ text: title, link: `/hooks/filters/${cat}` }))
 
 function buildHooksSidebar() {
   return [
@@ -116,6 +102,7 @@ const guidePages = [
   { text: 'Portal Customization', link: '/guides/portal-customization' },
   { text: 'FluentCRM Integration', link: '/guides/fluentcrm' },
   { text: 'Code Snippets', link: '/guides/code-snippets' },
+  { text: 'MCP for AI Agents', link: '/guides/mcp' },
 ]
 
 const proFeaturePages = [
@@ -196,6 +183,7 @@ function buildRestApiSidebar() {
       items: [
         { text: 'Reports', link: '/restapi/reports', dir: 'reports' },
         { text: 'Settings', link: '/restapi/settings', dir: 'settings' },
+        { text: 'MCP Settings', link: '/restapi/mcp', dir: 'mcp' },
       ],
     },
     {
@@ -392,6 +380,7 @@ export default defineConfig({
         ],
       },
       { text: 'REST API', link: '/restapi/' },
+      { text: 'MCP', link: '/mcp/' },
       {
         text: 'Guides',
         items: [
@@ -418,6 +407,20 @@ export default defineConfig({
         },
       ],
       '/hooks/': buildHooksSidebar(),
+      '/mcp/': [
+        {
+          text: 'MCP Server',
+          items: [
+            { text: 'Overview', link: '/mcp/' },
+            { text: 'Setup Guide', link: '/guides/mcp' },
+          ],
+        },
+        ...MCP_SIDEBAR.map((group) => ({
+          text: group.title,
+          collapsed: false,
+          items: group.tools.map((tool) => ({ text: tool.label, link: `/mcp/tools/${tool.slug}` })),
+        })),
+      ],
       '/restapi/': buildRestApiSidebar(),
       '/guides/': [
         {

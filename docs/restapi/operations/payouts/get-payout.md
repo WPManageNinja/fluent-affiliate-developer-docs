@@ -1,5 +1,5 @@
 ---
-title: Get Payout
+title: "Get Payout"
 description: "Retrieve a single payout."
 outline: false
 aside: false

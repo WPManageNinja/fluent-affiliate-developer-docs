@@ -1,5 +1,5 @@
 ---
-title: Get Registration Fields
+title: "Get Registration Fields"
 description: "Get affiliate registration field configuration."
 outline: false
 aside: false

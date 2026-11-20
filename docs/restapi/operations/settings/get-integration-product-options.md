@@ -1,5 +1,5 @@
 ---
-title: Get Integration Product Options
+title: "Get Integration Product Options"
 description: "Get product/category options for an integration."
 outline: false
 aside: false

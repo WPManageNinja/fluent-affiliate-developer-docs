@@ -1,5 +1,5 @@
 ---
-title: Get Feature Settings
+title: "Get Feature Settings"
 description: "Get settings for a specific feature."
 outline: false
 aside: false

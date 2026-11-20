@@ -67,7 +67,7 @@ add_filter('fluent_affiliate/portal_menu_items', function($menuItems) {
 });
 ```
 
-**Default menu keys:** `home`, `links`, `creatives`, `referrals`, `payouts`, `settings`
+**Default menu keys:** `home`, `links`, `creatives`, `referrals`, `payouts`, `visits`, `settings`
 
 ### Add a Custom Menu Item
 

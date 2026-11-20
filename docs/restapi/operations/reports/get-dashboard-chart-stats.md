@@ -1,5 +1,5 @@
 ---
-title: Get Dashboard Chart Stats
+title: "Get Dashboard Chart Stats"
 description: "Get time-series data for dashboard charts."
 outline: false
 aside: false

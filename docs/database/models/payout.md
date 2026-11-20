@@ -1,6 +1,6 @@
 ---
-title: Payout Model
-description: A payout batch grouping multiple affiliate transactions.
+title: "Payout Model"
+description: "A payout batch grouping multiple affiliate transactions."
 ---
 
 # Payout

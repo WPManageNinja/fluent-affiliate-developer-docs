@@ -1,0 +1,218 @@
+{
+  "openapi": "3.0.4",
+  "info": {
+    "title": "FluentAffiliate API",
+    "description": "REST API documentation for FluentAffiliate — a WordPress affiliate program management plugin.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{website}/wp-json/fluent-affiliate/v2",
+      "description": "Your WordPress website",
+      "variables": {
+        "website": {
+          "default": "YourWebsite.com",
+          "description": "Your WordPress website domain (without https://)"
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "ApplicationPasswords": []
+    }
+  ],
+  "paths": {
+    "/settings/mcp/install-toolkit": {
+      "post": {
+        "operationId": "installFluenthub",
+        "summary": "POST Install FluentHub",
+        "description": "Install and activate FluentHub, which provides the MCP adapter. FluentAffiliate does not install plugins itself: an active Fluent Pro plugin answers the `fluent_toolkit/do_auto_install` action (FluentAffiliate Pro does). Needs `install_plugins`. Without an installer, returns `422` with `toolkit_download_url`.\n\nController: `McpSettingsController@installToolkit`\nRoute source: `app/Http/Routes/api.php`",
+        "tags": [
+          "MCP Settings"
+        ],
+        "security": [
+          {
+            "ApplicationPasswords": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Request body parameters."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Write routes only."
+                    },
+                    "settings": {
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "type": "string",
+                          "enum": [
+                            "yes",
+                            "no"
+                          ]
+                        }
+                      }
+                    },
+                    "endpoint_url": {
+                      "type": "string",
+                      "description": "The MCP endpoint, `/wp-json/fluent-affiliate/mcp`."
+                    },
+                    "server_name": {
+                      "type": "string",
+                      "description": "Connection name for AI apps: `faff-` plus the site address, cut so every tool name fits 64 characters."
+                    },
+                    "adapter": {
+                      "type": "object",
+                      "properties": {
+                        "installed": {
+                          "type": "boolean"
+                        },
+                        "active": {
+                          "type": "boolean",
+                          "description": "An MCP adapter and the Abilities API are loaded."
+                        },
+                        "provider": {
+                          "type": "string",
+                          "enum": [
+                            "toolkit",
+                            "plugin",
+                            "other",
+                            ""
+                          ],
+                          "description": "`toolkit`: FluentHub. `plugin`: the MCP Adapter plugin."
+                        },
+                        "version": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "abilities_api": {
+                          "type": "boolean",
+                          "description": "WordPress 6.9+ Abilities API is available."
+                        },
+                        "toolkit_installed": {
+                          "type": "boolean"
+                        },
+                        "toolkit_active": {
+                          "type": "boolean"
+                        },
+                        "can_auto_install": {
+                          "type": "boolean"
+                        },
+                        "toolkit_download_url": {
+                          "type": "string"
+                        },
+                        "download_url": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "hub": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "FluentHub one-URL server state, or `null` when FluentHub is not active."
+                    },
+                    "tools": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer"
+                        },
+                        "pro": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "can_manage": {
+                      "type": "boolean",
+                      "description": "The current user has `manage_options`."
+                    },
+                    "user_can_connect": {
+                      "type": "boolean"
+                    },
+                    "app_passwords_url": {
+                      "type": "string"
+                    },
+                    "plugins_url": {
+                      "type": "string"
+                    },
+                    "current_user_login": {
+                      "type": "string"
+                    },
+                    "is_local_dev": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Bad request."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Sorry, you are not allowed to do this."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApplicationPasswords": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "WordPress Application Passwords — use Basic auth with username:application_password."
+      }
+    }
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "actions": [
+    {
+      "cat": "affiliates",
+      "title": "Affiliates"
+    },
+    {
+      "cat": "groups",
+      "title": "Groups (Pro)"
+    },
+    {
+      "cat": "referrals",
+      "title": "Referrals"
+    },
+    {
+      "cat": "payouts",
+      "title": "Payouts"
+    },
+    {
+      "cat": "portal",
+      "title": "Portal"
+    },
+    {
+      "cat": "integrations",
+      "title": "Integrations"
+    },
+    {
+      "cat": "creatives",
+      "title": "Creatives (Pro)"
+    },
+    {
+      "cat": "misc",
+      "title": "Miscellaneous"
+    }
+  ],
+  "filters": [
+    {
+      "cat": "affiliates",
+      "title": "Affiliates"
+    },
+    {
+      "cat": "groups",
+      "title": "Groups (Pro)"
+    },
+    {
+      "cat": "referrals",
+      "title": "Referrals"
+    },
+    {
+      "cat": "payouts",
+      "title": "Payouts"
+    },
+    {
+      "cat": "permissions",
+      "title": "Permissions (Pro)"
+    },
+    {
+      "cat": "portal",
+      "title": "Portal"
+    },
+    {
+      "cat": "settings",
+      "title": "Settings"
+    },
+    {
+      "cat": "auth",
+      "title": "Auth"
+    },
+    {
+      "cat": "integrations",
+      "title": "Integrations"
+    },
+    {
+      "cat": "creatives",
+      "title": "Creatives (Pro)"
+    },
+    {
+      "cat": "mcp",
+      "title": "MCP Server"
+    }
+  ]
+}

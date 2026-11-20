@@ -1,5 +1,5 @@
 ---
-title: List Payout Referrals
+title: "List Payout Referrals"
 description: "List referrals included in a payout."
 outline: false
 aside: false

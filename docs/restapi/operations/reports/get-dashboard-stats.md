@@ -1,5 +1,5 @@
 ---
-title: Get Dashboard Stats
+title: "Get Dashboard Stats"
 description: "Get dashboard KPI statistics."
 outline: false
 aside: false

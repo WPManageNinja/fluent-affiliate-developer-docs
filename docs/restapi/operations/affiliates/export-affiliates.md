@@ -1,5 +1,5 @@
 ---
-title: Export Affiliates
+title: "Export Affiliates"
 description: "Export affiliates as a CSV file."
 outline: false
 aside: false

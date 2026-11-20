@@ -1,5 +1,5 @@
 ---
-title: List Migrations
+title: "List Migrations"
 description: "List available data migrators."
 outline: false
 aside: false

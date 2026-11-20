@@ -1,6 +1,6 @@
 ---
-title: Payouts API
-description: Payout batch management, transaction operations, payout processing, and CSV export.
+title: "Payouts API"
+description: "Payout batch management, transaction operations, payout processing, and CSV export."
 ---
 
 # Payouts API

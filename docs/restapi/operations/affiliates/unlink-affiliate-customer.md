@@ -1,5 +1,5 @@
 ---
-title: Unlink Affiliate Customer
+title: "Unlink Affiliate Customer"
 description: "Unlink a customer from an affiliate."
 outline: false
 aside: false

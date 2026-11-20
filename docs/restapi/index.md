@@ -5,7 +5,7 @@ description: Source-verified overview for the FluentAffiliate REST API.
 
 # FluentAffiliate REST API
 
-This reference covers 112 routes registered in the FluentAffiliate core and Pro route files.
+This reference covers 116 routes registered in the FluentAffiliate core and Pro route files.
 
 ## Base URL
 
@@ -43,4 +43,5 @@ All routes share the single base path `/wp-json/fluent-affiliate/v2`. There is n
 | [Creatives API](/restapi/creatives) | <span class="pro-badge">PRO</span> | 6 | Creative asset management (admin) and portal creative retrieval for authenticated affiliates. |
 | [Connected Sites API](/restapi/connected-sites) | <span class="pro-badge">PRO</span> | 5 | Connected site configuration management, token issuance, and site disconnect operations. |
 | [License API](/restapi/license) | <span class="pro-badge">PRO</span> | 3 | Pro license status retrieval, activation, and deactivation. |
+| [MCP Settings API](/restapi/mcp) | Core | 4 | The "MCP for AI Agents" settings screen: read the MCP server status, turn the server on or off, turn on the FluentHub MCP server, and install FluentHub. The MCP tools themselves are documented under [MCP Server](/mcp/). |
 

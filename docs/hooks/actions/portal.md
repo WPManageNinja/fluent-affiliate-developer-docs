@@ -1,6 +1,6 @@
 ---
-title: Portal
-description: Action hooks in the Portal category.
+title: "Portal"
+description: "Action hooks in the Portal category."
 ---
 
 # Portal

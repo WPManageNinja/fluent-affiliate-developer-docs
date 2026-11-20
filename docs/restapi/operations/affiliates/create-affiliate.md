@@ -1,5 +1,5 @@
 ---
-title: Create Affiliate
+title: "Create Affiliate"
 description: "Create a new affiliate."
 outline: false
 aside: false

@@ -1,5 +1,5 @@
 ---
-title: List Affiliate Visits
+title: "List Affiliate Visits"
 description: "List visits for an affiliate."
 outline: false
 aside: false

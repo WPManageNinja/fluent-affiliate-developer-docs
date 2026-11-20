@@ -1,7 +1,8 @@
 {
   "models": 10,
-  "routes": 112,
-  "hooks": 147,
+  "routes": 116,
+  "hooks": 152,
   "tables": 8,
-  "openapiSpecs": 112
+  "openapiSpecs": 116,
+  "mcpTools": 16
 }

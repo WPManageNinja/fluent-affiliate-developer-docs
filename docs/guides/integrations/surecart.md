@@ -32,6 +32,29 @@ SureCart subscription renewals are supported when [Recurring Commissions](/guide
 
 Settings are under **Settings → Integrations → SureCart**.
 
+## Custom Commission Rates
+
+You can set a commission rate for specific SureCart products. The rates are stored in the connector config as `custom_affiliate_rates`. Each rule has `object_type`, `object_ids`, `rate_type` and `rate`.
+
+`BaseConnector::calculateFinalCommissionAmount()` calculates the commission:
+
+1. Each line item whose product has a custom rate earns that rate on the line's net total.
+2. The rest of the order earns the affiliate's normal rate.
+3. The commission is the sum of the two parts.
+
+SureCart rules match products only. The SureCart connector passes no taxonomy, so a `category` rule never matches a SureCart order.
+
+A bundle comes from SureCart as one parent line plus one line for each component. The integration skips the component lines, so no amount is counted twice.
+
+## Tax-Inclusive Prices
+
+`calculateOrderTotal()` expects a net subtotal. When a SureCart checkout has `tax_behavior = inclusive`, the subtotal and the shipping include the tax. The integration removes the tax before it calculates the commission:
+
+- The subtotal loses `tax_inclusive_amount` minus the shipping tax.
+- The shipping loses `shipping_tax_amount`.
+
+Line items get the same treatment, so custom product rates also use net amounts.
+
 ## Provider Reference URL
 
 ```php

@@ -1,5 +1,5 @@
 ---
-title: Delete Manager
+title: "Delete Manager"
 description: "Remove an affiliate manager."
 outline: false
 aside: false

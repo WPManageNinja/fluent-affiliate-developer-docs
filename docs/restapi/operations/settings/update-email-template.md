@@ -1,5 +1,5 @@
 ---
-title: Update Email Template
+title: "Update Email Template"
 description: "Update a single notification email template."
 outline: false
 aside: false

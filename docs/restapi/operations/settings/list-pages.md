@@ -1,5 +1,5 @@
 ---
-title: List Pages
+title: "List Pages"
 description: "Get a list of WordPress pages for the portal page selector."
 outline: false
 aside: false

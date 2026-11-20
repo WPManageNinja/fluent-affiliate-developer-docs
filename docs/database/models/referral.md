@@ -1,6 +1,6 @@
 ---
-title: Referral Model
-description: Represents a commission event generated when a referred visitor completes a qualifying action.
+title: "Referral Model"
+description: "Represents a commission event generated when a referred visitor completes a qualifying action."
 ---
 
 # Referral

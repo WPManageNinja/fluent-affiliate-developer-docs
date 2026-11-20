@@ -10,11 +10,11 @@ FluentAffiliate fires **36 action hooks** (including dynamic variants). Use `add
 | Category | Description |
 |----------|-------------|
 | [Affiliates](/hooks/actions/affiliates) | Affiliate lifecycle events — created, updated, status changes, deleted |
+| [Groups](/hooks/actions/groups) | Affiliate group lifecycle events <span class="pro-badge">PRO</span> |
 | [Referrals](/hooks/actions/referrals) | Referral creation, status transitions, and deletion |
 | [Payouts](/hooks/actions/payouts) | Payout batch and transaction events |
 | [Portal](/hooks/actions/portal) | Customer portal render hooks |
 | [Integrations](/hooks/actions/integrations) | Third-party integration events and data migration hooks |
-| [Groups](/hooks/actions/groups) | Affiliate group lifecycle events <span class="pro-badge">PRO</span> |
 | [Creatives](/hooks/actions/creatives) | Creative asset lifecycle events <span class="pro-badge">PRO</span> |
 | [Miscellaneous](/hooks/actions/misc) | Hooks that do not fit the categories above |
 

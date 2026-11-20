@@ -1,5 +1,5 @@
 ---
-title: Get PayPal Settings
+title: "Get PayPal Settings"
 description: "Get the PayPal Payouts settings and the webhook URL to register at PayPal. Client secrets are returned masked."
 outline: false
 aside: false

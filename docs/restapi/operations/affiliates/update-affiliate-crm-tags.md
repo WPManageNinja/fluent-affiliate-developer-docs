@@ -1,5 +1,5 @@
 ---
-title: Update Affiliate CRM Tags
+title: "Update Affiliate CRM Tags"
 description: "Attach or detach FluentCRM tags on the affiliate's CRM contact."
 outline: false
 aside: false

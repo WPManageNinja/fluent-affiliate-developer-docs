@@ -1,6 +1,6 @@
 ---
-title: Reports API
-description: Dashboard KPI statistics and dashboard chart time-series data.
+title: "Reports API"
+description: "Dashboard KPI statistics and dashboard chart time-series data."
 ---
 
 # Reports API

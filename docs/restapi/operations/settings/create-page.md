@@ -1,5 +1,5 @@
 ---
-title: Create Page
+title: "Create Page"
 description: "Create a new WordPress page for the portal."
 outline: false
 aside: false

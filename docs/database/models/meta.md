@@ -1,6 +1,6 @@
 ---
-title: Meta Model
-description: Generic key-value meta storage for affiliate and other objects.
+title: "Meta Model"
+description: "Generic key-value meta storage for affiliate and other objects."
 ---
 
 # Meta

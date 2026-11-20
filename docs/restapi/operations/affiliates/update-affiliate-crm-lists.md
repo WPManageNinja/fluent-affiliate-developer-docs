@@ -1,5 +1,5 @@
 ---
-title: Update Affiliate CRM Lists
+title: "Update Affiliate CRM Lists"
 description: "Attach or detach FluentCRM lists on the affiliate's CRM contact."
 outline: false
 aside: false

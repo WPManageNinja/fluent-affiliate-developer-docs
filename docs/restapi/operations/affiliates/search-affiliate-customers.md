@@ -1,5 +1,5 @@
 ---
-title: Search Affiliate Customers
+title: "Search Affiliate Customers"
 description: "Search customers to link to an affiliate for lifetime commissions."
 outline: false
 aside: false

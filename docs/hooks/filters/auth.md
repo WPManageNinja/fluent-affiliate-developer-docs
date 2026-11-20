@@ -1,6 +1,6 @@
 ---
-title: Auth
-description: Filter hooks in the Auth category.
+title: "Auth"
+description: "Filter hooks in the Auth category."
 ---
 
 # Auth

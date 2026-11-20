@@ -1,5 +1,5 @@
 ---
-title: Process Payout
+title: "Process Payout"
 description: "Process a payout batch."
 outline: false
 aside: false

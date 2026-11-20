@@ -1,5 +1,5 @@
 ---
-title: List Affiliates
+title: "List Affiliates"
 description: "List all affiliates with pagination and filters."
 outline: false
 aside: false

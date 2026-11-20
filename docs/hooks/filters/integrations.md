@@ -1,6 +1,6 @@
 ---
-title: Integrations
-description: Filter hooks in the Integrations category.
+title: "Integrations"
+description: "Filter hooks in the Integrations category."
 ---
 
 # Integrations
@@ -15,7 +15,7 @@ description: Filter hooks in the Integrations category.
 | [`fluent_affiliate/get_integration_stored_config_{integration}`](#fluent-affiliate-get-integration-stored-config-integration) | Filters an integration's stored connector config as it is read from the `_{integration}_connector_config` option. |
 | [`fluent_affiliate/get_product_cat_options_{integration}`](#fluent-affiliate-get-product-cat-options-integration) | Dynamic filter for populating the product/category options list in an integration settings form. |
 | [`fluent_affiliate/migrators`](#fluent-affiliate-migrators) | Filters the list of available data migrators in the Migration Tools. |
-| [`fluent_affiliate/get_migration_statistics`](#fluent-affiliate-get-migration-statistics) | Filters migration statistics shown in the admin migration tools. |
+| [`fluent_affiliate/get_migration_statistics`](#fluent-affiliate-get-migration-statistics) | Filters the migration statistics shown in the admin migration tools: for each data type, how many rows the source plugin has and how many are in FluentAffiliate now. |
 | [`fluent_affiliate/get_current_data_counts`](#fluent-affiliate-get-current-data-counts) | Filters the current data counts displayed before a wipe operation. |
 | [`fluent_affiliate/wppayform__defaults`](#fluent-affiliate-wppayform-defaults) | Filters the default field values pre-filled into a Paymattic affiliate registration form. |
 | [`fluent_affiliate/visit_flood_limit`](#fluent-affiliate-visit-flood-limit) | Filters how many visits one IP address can record in one hour. |
@@ -23,6 +23,7 @@ description: Filter hooks in the Integrations category.
 | [`fluent_affiliate/user_ip`](#fluent-affiliate-user-ip) | Filters the visitor IP address used for visit tracking. |
 | [`fluent_affiliate/trust_proxy_headers`](#fluent-affiliate-trust-proxy-headers) | Controls whether visit tracking trusts the `X-Forwarded-For` header from the proxies listed in `fluent_affiliate/trusted_proxies` when resolving the visitor IP. |
 | [`fluent_affiliate/trusted_proxies`](#fluent-affiliate-trusted-proxies) | Filters the proxy IP addresses whose `X-Forwarded-For` header is trusted when the visitor IP is resolved. |
+| [`fluent_affiliate/cloudflare_ip_ranges`](#fluent-affiliate-cloudflare-ip-ranges) | Filters the Cloudflare IP ranges (IPv4 and IPv6, CIDR notation) used to decide whether a request came through Cloudflare. |
 | [`fluent_affiliate/md_ingest_limit`](#fluent-affiliate-md-ingest-limit) | Filters how many visit rows one connected site can send to the multi-domain tracking endpoint in one minute <span class="pro-badge">PRO</span>. |
 | [`fluent_affiliate/woo_menu_link_position`](#fluent-affiliate-woo-menu-link-position) | Filters the menu position integer for the FluentAffiliate link added to the WooCommerce My Account menu. |
 | [`fluent_affiliate/woo_menu_label`](#fluent-affiliate-woo-menu-label) | Filters the label text for the FluentAffiliate link in the WooCommerce My Account menu. |
@@ -116,16 +117,19 @@ Dynamic filter for populating the product/category options list in an integratio
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `$options` | `array` | Array of option objects, each with `id` (int) and `name` (string). |
+| `$options` | `array` | Option rows, each with `id` and `label`. Default `[]`; the integration's connector fills it. |
+| `$params` | `array` | `object_type` (`product` or a category type), `search` (string) and `include_ids` (ids already selected, which must stay in the list). |
 
 **Source:** `app/Http/Controllers/IntegrationController.php`
 
 ```php
-// Example: add a custom option to the WooCommerce product category list
-add_filter('fluent_affiliate/get_product_cat_options_woo', function($options) {
-    $options[] = ['id' => 999, 'name' => 'My Custom Category'];
+// Add a custom option to the WooCommerce product list
+add_filter('fluent_affiliate/get_product_cat_options_woo', function($options, $params) {
+    if (($params['object_type'] ?? '') === 'product') {
+        $options[] = ['id' => 999, 'label' => 'My Custom Product'];
+    }
     return $options;
-});
+}, 20, 2);
 ```
 
 ## `fluent_affiliate/migrators`
@@ -149,21 +153,22 @@ add_filter('fluent_affiliate/migrators', function($migrators) {
 
 ## `fluent_affiliate/get_migration_statistics`
 
-Filters migration statistics shown in the admin migration tools.
+Filters the migration statistics shown in the admin migration tools: for each data type, how many rows the source plugin has and how many are in FluentAffiliate now.
 
 **Parameters**
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `$stats` | `array` | Statistics array. |
+| `$stats` | `array` | Keyed by data type (`affiliate_groups`, `affiliates`, `referrals`, …); each entry has `total` and `migrated`. |
+| `$counts` | `array` | Row counts in the source plugin, from the migrator's `getCounts()`. |
 
 **Source:** `app/Http/Controllers/MigrationController.php`
 
 ```php
-add_filter('fluent_affiliate/get_migration_statistics', function($stats) {
-    $stats['my_plugin'] = MyMigrator::getStats();
+add_filter('fluent_affiliate/get_migration_statistics', function($stats, $counts) {
+    $stats['coupons'] = ['total' => $counts['coupons'] ?? 0, 'migrated' => my_migrated_coupon_count()];
     return $stats;
-});
+}, 10, 2);
 ```
 
 ## `fluent_affiliate/get_current_data_counts`
@@ -292,6 +297,25 @@ Filters the proxy IP addresses whose `X-Forwarded-For` header is trusted when th
 add_filter('fluent_affiliate/trusted_proxies', function($proxies) {
     $proxies[] = '10.0.0.5'; // your load balancer
     return $proxies;
+});
+```
+
+## `fluent_affiliate/cloudflare_ip_ranges`
+
+Filters the Cloudflare IP ranges (IPv4 and IPv6, CIDR notation) used to decide whether a request came through Cloudflare. Visit tracking uses the `CF-Connecting-IP` header only when `REMOTE_ADDR` is in one of these ranges. Use it to update the list when Cloudflare changes its ranges before a plugin release ships the change.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$ranges` | `string[]` | CIDR ranges from https://www.cloudflare.com/ips/. |
+
+**Source:** `app/Services/VisitService.php`
+
+```php
+add_filter('fluent_affiliate/cloudflare_ip_ranges', function($ranges) {
+    $ranges[] = '2a06:98c0::/29';
+    return $ranges;
 });
 ```
 

@@ -1,5 +1,5 @@
 ---
-title: Get Captcha Settings
+title: "Get Captcha Settings"
 description: "Get the captcha (Google reCAPTCHA) settings, the available provider list, and whether the active provider's keys have been validated. Secret keys are returned masked."
 outline: false
 aside: false

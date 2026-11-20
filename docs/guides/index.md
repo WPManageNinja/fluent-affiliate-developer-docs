@@ -21,6 +21,10 @@ Automation triggers and actions, the affiliate CRM profile card (tag/list manage
 
 Source-verified, ready-to-use PHP snippets for the most common customization tasks: auto-approving affiliates, capping commissions, sending custom notifications, modifying portal menus, and more.
 
+### [MCP for AI Agents](/guides/mcp)
+
+Turn on the MCP server, connect an AI app with an application password, control who can use the tools, and add your own tools.
+
 ---
 
 ## Pro Features

@@ -1,5 +1,5 @@
 ---
-title: Get Portal Stats
+title: "Get Portal Stats"
 description: "Get the authenticated affiliate's summary stats."
 outline: false
 aside: false

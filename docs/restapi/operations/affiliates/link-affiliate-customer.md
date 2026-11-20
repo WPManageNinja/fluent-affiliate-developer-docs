@@ -1,5 +1,5 @@
 ---
-title: Link Affiliate Customer
+title: "Link Affiliate Customer"
 description: "Link a customer to an affiliate for lifetime commissions."
 outline: false
 aside: false

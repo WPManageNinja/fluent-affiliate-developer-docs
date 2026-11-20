@@ -1,6 +1,6 @@
 ---
-title: Affiliates
-description: Action hooks in the Affiliates category.
+title: "Affiliates"
+description: "Action hooks in the Affiliates category."
 ---
 
 # Affiliates

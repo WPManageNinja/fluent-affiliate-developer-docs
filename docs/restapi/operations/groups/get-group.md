@@ -1,5 +1,5 @@
 ---
-title: Get Group
+title: "Get Group"
 description: "Get a single affiliate group."
 outline: false
 aside: false

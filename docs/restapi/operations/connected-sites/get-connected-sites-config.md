@@ -1,5 +1,5 @@
 ---
-title: Get Connected Sites Config
+title: "Get Connected Sites Config"
 description: "Get the connected-sites configuration."
 outline: false
 aside: false

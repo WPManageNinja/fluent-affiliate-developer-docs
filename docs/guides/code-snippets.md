@@ -32,15 +32,16 @@ add_filter('fluent_affiliate/auth/after_login_redirect_url', function ($redirect
 Append a menu item to the affiliate portal navigation.
 
 ```php
-add_filter('fluent_affiliate/portal_menu_items', function ($menuItems) {
-    $menuItems[] = [
-        'key'   => 'resources',
-        'label' => 'Resources',
-        'icon'  => 'el-icon-document',
-        'route' => 'resources',
+add_filter('fluent_affiliate/portal_menu_items', function ($menuItems, $affiliate) {
+    // Items are keyed by slug
+    $menuItems['resources'] = [
+        'title'   => 'Resources',
+        'enabled' => true,
+        'icon'    => '<svg>...</svg>',          // inline SVG markup
+        'route'   => ['name' => 'resources'],   // a portal (Vue) route name
     ];
     return $menuItems;
-}, 10, 1);
+}, 10, 2);
 ```
 
 ## Customize the Pending Affiliate Message

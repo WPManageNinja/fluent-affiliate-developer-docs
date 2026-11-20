@@ -1,5 +1,5 @@
 ---
-title: Update Feature Settings
+title: "Update Feature Settings"
 description: "Update settings for a specific feature."
 outline: false
 aside: false

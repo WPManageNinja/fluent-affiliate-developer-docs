@@ -1,5 +1,5 @@
 ---
-title: Wipe Data
+title: "Wipe Data"
 description: "Wipe all FluentAffiliate data."
 outline: false
 aside: false

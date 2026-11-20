@@ -1,5 +1,5 @@
 ---
-title: Get Group Overview
+title: "Get Group Overview"
 description: "Get summary stats for a group."
 outline: false
 aside: false

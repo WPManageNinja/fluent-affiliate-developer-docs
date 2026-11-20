@@ -1,5 +1,5 @@
 ---
-title: List Portal Creatives
+title: "List Portal Creatives"
 description: "Get creative assets available to the authenticated affiliate."
 outline: false
 aside: false

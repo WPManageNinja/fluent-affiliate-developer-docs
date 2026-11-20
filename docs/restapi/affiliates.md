@@ -1,6 +1,6 @@
 ---
-title: Affiliates API
-description: Affiliate listing, creation, updates, deletion, per-affiliate statistics and transactions, FluentCRM contact management, and lifetime-commission customer links.
+title: "Affiliates API"
+description: "Affiliate listing, creation, updates, deletion, per-affiliate statistics and transactions, FluentCRM contact management, and lifetime-commission customer links."
 ---
 
 # Affiliates API

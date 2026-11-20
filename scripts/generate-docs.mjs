@@ -16,6 +16,7 @@
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSync, rmSync } from 'fs'
 import { resolve, join, dirname, relative, basename } from 'path'
 import { fileURLToPath } from 'url'
+import { spawnSync } from 'child_process'
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -59,6 +60,12 @@ function scanPhpFiles(dir) {
 
 function ensureDir(p) {
   if (!existsSync(p)) mkdirSync(p, { recursive: true })
+}
+
+// A YAML front-matter value. JSON strings are valid YAML, so quotes, colons and
+// backslashes in descriptions cannot break the page.
+function yamlStr(value) {
+  return JSON.stringify(String(value ?? ''))
 }
 
 function writeDoc(filePath, content) {
@@ -221,6 +228,34 @@ function parseCreateTableBody(body, tableName = '') {
 // Hook extraction from PHP source
 // ---------------------------------------------------------------------------
 
+// Number of arguments a hook call passes after the hook name, found by walking
+// the call's parentheses (strings and nested brackets skipped). Recorded per hook
+// so main() can flag documented params that no longer match the source.
+function countHookArgs(content, callIndex) {
+  let i = content.indexOf('(', callIndex) + 1
+  let depth = 0
+  let args = 0
+  let sawToken = false
+  for (; i < content.length; i++) {
+    const c = content[i]
+    if (c === "'" || c === '"') {
+      for (i++; i < content.length && content[i] !== c; i++) if (content[i] === '\\') i++
+      sawToken = true
+    } else if ('([{'.includes(c)) { depth++; sawToken = true }
+    else if (')]}'.includes(c)) {
+      if (depth === 0) return sawToken ? args : 0
+      depth--
+    } else if (c === ',' && depth === 0) args++
+    else if (!/\s/.test(c)) sawToken = true
+  }
+  return args
+}
+
+function recordArgCount(entry, content, callIndex) {
+  if (!entry.argCounts) entry.argCounts = new Set()
+  entry.argCounts.add(countHookArgs(content, callIndex))
+}
+
 function extractHooks(sourceDirs) {
   const actions = {}   // hook => { files, isPro, isDynamic }
   const filters = {}
@@ -235,18 +270,22 @@ function extractHooks(sourceDirs) {
       const rel     = relative(coreRoot, file)
 
       // Static action hooks (not followed by string concatenation ` . $`)
-      for (const [, hook] of content.matchAll(/(?:do_action|->doAction)\s*\(\s*['"](fluent_affiliate[/_][^'"]+)['"](?!\s*\.)/g)) {
+      for (const m of content.matchAll(/(?:do_action|->doAction)\s*\(\s*['"](fluent_affiliate[/_][^'"]+)['"](?!\s*\.)/g)) {
+        const hook = m[1]
         if (!actions[hook]) actions[hook] = { files: [], isPro, isDynamic: false }
         if (!actions[hook].files.includes(rel)) actions[hook].files.push(rel)
+        recordArgCount(actions[hook], content, m.index)
       }
 
       // Dynamic action hooks  e.g.  'fluent_affiliate/foo_' . $var  or  'fluent_affiliate_foo_' . $var . '_bar'
-      for (const [, base, varName, tail] of content.matchAll(
+      for (const m of content.matchAll(
         /(?:do_action|->doAction)\s*\(\s*['"](fluent_affiliate[/_][^'"]+)['"]\s*\.\s*\$(\w+)(?:(?:->\w+|\[[^\]]*\])*\s*\.\s*['"]([^'"]+)['"])?/g,
       )) {
+        const [, base, varName, tail] = m
         const hook = base + `{${varName}}` + (tail ?? '')
         if (!actions[hook]) actions[hook] = { files: [], isPro, isDynamic: true }
         if (!actions[hook].files.includes(rel)) actions[hook].files.push(rel)
+        recordArgCount(actions[hook], content, m.index)
       }
 
       // Slug-prefixed action hooks  e.g.  do_action($this->slug . '_loading_app')  where the
@@ -260,18 +299,22 @@ function extractHooks(sourceDirs) {
       }
 
       // Static filter hooks (not followed by string concatenation ` . $`)
-      for (const [, hook] of content.matchAll(/(?:apply_filters|->applyFilters)\s*\(\s*['"](fluent_affiliate[/_][^'"]+)['"](?!\s*\.)/g)) {
+      for (const m of content.matchAll(/(?:apply_filters|->applyFilters)\s*\(\s*['"](fluent_affiliate[/_][^'"]+)['"](?!\s*\.)/g)) {
+        const hook = m[1]
         if (!filters[hook]) filters[hook] = { files: [], isPro, isDynamic: false }
         if (!filters[hook].files.includes(rel)) filters[hook].files.push(rel)
+        recordArgCount(filters[hook], content, m.index)
       }
 
       // Dynamic filter hooks  e.g.  'fluent_affiliate/foo_' . $var  or  'fluent_affiliate_foo_' . $var . '_bar'
-      for (const [, base, varName, tail] of content.matchAll(
+      for (const m of content.matchAll(
         /(?:apply_filters|->applyFilters)\s*\(\s*['"](fluent_affiliate[/_][^'"]+)['"]\s*\.\s*\$(\w+)(?:(?:->\w+|\[[^\]]*\])*\s*\.\s*['"]([^'"]+)['"])?/g,
       )) {
+        const [, base, varName, tail] = m
         const hook = base + `{${varName}}` + (tail ?? '')
         if (!filters[hook]) filters[hook] = { files: [], isPro, isDynamic: true }
         if (!filters[hook].files.includes(rel)) filters[hook].files.push(rel)
+        recordArgCount(filters[hook], content, m.index)
       }
     }
   }
@@ -1084,14 +1127,16 @@ add_filter('fluent_affiliate/will_load_tracker_js', function($willLoad) {
 });`,
   },
   'fluent_affiliate/portal_menu_items': {
-    desc: 'Filters the navigation items shown in the affiliate portal sidebar.',
+    desc: 'Filters the navigation items shown in the affiliate portal sidebar. Items are keyed by slug; each has `title`, `enabled`, `icon` (inline SVG markup) and `route` (`[\'name\' => <portal route name>]`).',
     params: [
-      { name: '$items', type: 'array', desc: 'Portal menu items.' },
+      { name: '$items',     type: 'array',          desc: 'Portal menu items keyed by slug: `home`, `links`, `creatives`, `referrals`, `payouts`, `visits`, `settings`.' },
+      { name: '$affiliate', type: 'Affiliate|null', desc: 'The affiliate the portal is shown to, when known.' },
     ],
-    example: `add_filter('fluent_affiliate/portal_menu_items', function($items) {
-    $items[] = ['title' => 'My Custom Page', 'route' => 'custom-page', 'icon' => 'el-icon-document'];
+    example: `add_filter('fluent_affiliate/portal_menu_items', function($items, $affiliate) {
+    // Hide the promo materials item
+    $items['creatives']['enabled'] = false;
     return $items;
-});`,
+}, 10, 2);`,
   },
   'fluent_affiliate/get_currencies': {
     desc: 'Filters the list of available currencies.',
@@ -1214,14 +1259,15 @@ add_filter('fluent_affiliate/will_load_tracker_js', function($willLoad) {
 });`,
   },
   'fluent_affiliate/get_migration_statistics': {
-    desc: 'Filters migration statistics shown in the admin migration tools.',
+    desc: 'Filters the migration statistics shown in the admin migration tools: for each data type, how many rows the source plugin has and how many are in FluentAffiliate now.',
     params: [
-      { name: '$stats', type: 'array', desc: 'Statistics array.' },
+      { name: '$stats',  type: 'array', desc: 'Keyed by data type (`affiliate_groups`, `affiliates`, `referrals`, …); each entry has `total` and `migrated`.' },
+      { name: '$counts', type: 'array', desc: 'Row counts in the source plugin, from the migrator\'s `getCounts()`.' },
     ],
-    example: `add_filter('fluent_affiliate/get_migration_statistics', function($stats) {
-    $stats['my_plugin'] = MyMigrator::getStats();
+    example: `add_filter('fluent_affiliate/get_migration_statistics', function($stats, $counts) {
+    $stats['coupons'] = ['total' => $counts['coupons'] ?? 0, 'migrated' => my_migrated_coupon_count()];
     return $stats;
-});`,
+}, 10, 2);`,
   },
   'fluent_affiliate/get_current_data_counts': {
     desc: 'Filters the current data counts displayed before a wipe operation.',
@@ -1598,13 +1644,16 @@ add_filter('fluent_affiliate_dashboard_woo_stats', function($widgets) {
   'fluent_affiliate/get_product_cat_options_{integration}': {
     desc: 'Dynamic filter for populating the product/category options list in an integration settings form. The `{integration}` segment is the integration slug (e.g. `woo`, `edd`). Return an array of `{ id, name }` objects.',
     params: [
-      { name: '$options', type: 'array', desc: 'Array of option objects, each with `id` (int) and `name` (string).' },
+      { name: '$options', type: 'array', desc: 'Option rows, each with `id` and `label`. Default `[]`; the integration\'s connector fills it.' },
+      { name: '$params',  type: 'array', desc: '`object_type` (`product` or a category type), `search` (string) and `include_ids` (ids already selected, which must stay in the list).' },
     ],
-    example: `// Example: add a custom option to the WooCommerce product category list
-add_filter('fluent_affiliate/get_product_cat_options_woo', function($options) {
-    $options[] = ['id' => 999, 'name' => 'My Custom Category'];
+    example: `// Add a custom option to the WooCommerce product list
+add_filter('fluent_affiliate/get_product_cat_options_woo', function($options, $params) {
+    if (($params['object_type'] ?? '') === 'product') {
+        $options[] = ['id' => 999, 'label' => 'My Custom Product'];
+    }
     return $options;
-});`,
+}, 20, 2);`,
   },
 
   'fluent_affiliate/get_integration_stored_config_{integration}': {
@@ -1968,6 +2017,68 @@ add_filter('fluent_affiliate/ignore_zero_total_referral', '__return_false');`,
 });`,
   },
 
+  // --- MCP server ---
+  'fluent_affiliate/mcp_tool_definitions': {
+    desc: 'Adds tools to the FluentAffiliate MCP server. Each definition is keyed by its ability name, which must start with `fluent-affiliate/`, and takes the same keys as the built-in tools: `label`, `description`, `input_schema`, `execute_callback`, `annotations` and `requires`. A definition with a missing key, an invalid `requires`, or the name of a built-in tool is ignored. See the [MCP guide](/guides/mcp#add-your-own-tool).',
+    params: [
+      { name: '$definitions', type: 'array', desc: 'Extra tool definitions keyed by ability name. Default `[]`.' },
+    ],
+    example: `add_filter('fluent_affiliate/mcp_tool_definitions', function($definitions) {
+    $definitions['fluent-affiliate/count-pending'] = [
+        'label'            => 'Count Pending Affiliates',
+        'description'      => 'Count the affiliates waiting for approval.',
+        'input_schema'     => ['type' => 'object', 'properties' => []],
+        'execute_callback' => 'my_count_pending_affiliates',
+        'annotations'      => ['readonly' => true, 'destructive' => false, 'idempotent' => true, 'openWorldHint' => false],
+        'requires'         => 'affiliate_read', // one of McpGate::REQUIREMENTS
+    ];
+    return $definitions;
+});`,
+  },
+  'fluent_affiliate/mcp_ability_names': {
+    desc: 'Filters the tool names the FluentAffiliate MCP server exposes. Remove a name to hide that tool from every client. A name that is not a registered FluentAffiliate tool is dropped, so this filter cannot add tools; use `fluent_affiliate/mcp_tool_definitions` for that. The list is also filtered per user: a client sees only the tools its user has the permission for.',
+    params: [
+      { name: '$names', type: 'string[]', desc: 'Ability names, such as `fluent-affiliate/list-referrals`.' },
+    ],
+    example: `// Read-only MCP: hide every tool that writes
+add_filter('fluent_affiliate/mcp_ability_names', function($names) {
+    $writes = ['create-affiliate', 'update-affiliate', 'save-referral', 'update-referrals',
+               'create-payout', 'update-transaction', 'remove-transaction'];
+
+    return array_values(array_filter($names, function($name) use ($writes) {
+        return !in_array(substr($name, strlen('fluent-affiliate/')), $writes, true);
+    }));
+});`,
+  },
+  'fluent_affiliate/mcp/server_instructions': {
+    desc: 'Filters the instructions the FluentAffiliate MCP server sends to AI clients in the MCP `instructions` field. FluentHub also sends them on every help call, so keep them short and in plain English. The default text is shown on the [MCP Server](/mcp/#server-instructions) page.',
+    params: [
+      { name: '$instructions', type: 'string', desc: 'The server instructions.' },
+    ],
+    example: `add_filter('fluent_affiliate/mcp/server_instructions', function($instructions) {
+    return $instructions . "\n\nHouse rule: never approve an affiliate without asking the person first.";
+});`,
+  },
+  'fluent_affiliate/mcp/single_result_copy': {
+    desc: 'Controls whether the FluentAffiliate MCP endpoint sends each successful tool result once, as text. The MCP adapter sends every result twice (as text and as `structuredContent`), and some clients pass both copies to the model. Return `false` for a client program that reads `structuredContent` and not the text. Applies only to the `/wp-json/fluent-affiliate/mcp` route, not to FluentHub.',
+    params: [
+      { name: '$once', type: 'bool', desc: 'Default `true`.' },
+    ],
+    example: `add_filter('fluent_affiliate/mcp/single_result_copy', '__return_false');`,
+  },
+
+  // --- Cloudflare ---
+  'fluent_affiliate/cloudflare_ip_ranges': {
+    desc: 'Filters the Cloudflare IP ranges (IPv4 and IPv6, CIDR notation) used to decide whether a request came through Cloudflare. Visit tracking uses the `CF-Connecting-IP` header only when `REMOTE_ADDR` is in one of these ranges. Use it to update the list when Cloudflare changes its ranges before a plugin release ships the change.',
+    params: [
+      { name: '$ranges', type: 'string[]', desc: 'CIDR ranges from https://www.cloudflare.com/ips/.' },
+    ],
+    example: `add_filter('fluent_affiliate/cloudflare_ip_ranges', function($ranges) {
+    $ranges[] = '2a06:98c0::/29';
+    return $ranges;
+});`,
+  },
+
   // --- License ---
   'fluent_affiliate/license_grace_period_days': {
     desc: 'Filters the number of days Pro stays active after a valid license expires <span class="pro-badge">PRO</span>. Used only when the license server does not send its own grace period. Return `0` to turn off the grace period.',
@@ -2328,8 +2439,8 @@ function buildModelDoc(tableName, columns, meta) {
   const proTag = meta.isPro ? ' <span class="pro-badge">PRO</span>' : ''
   const lines = [
     '---',
-    `title: ${meta.class} Model${meta.isPro ? ' (Pro)' : ''}`,
-    `description: ${meta.desc}`,
+    `title: ${yamlStr(`${meta.class} Model${meta.isPro ? ' (Pro)' : ''}`)}`,
+    `description: ${yamlStr(meta.desc)}`,
     '---',
     '',
     `# ${meta.class}${proTag}`,
@@ -2477,8 +2588,8 @@ function buildHookCategoryDoc(title, hooks, hookMap, type) {
   if (hooks.length === 0) {
     return [
       '---',
-      `title: ${title}`,
-      `description: ${type === 'action' ? 'Action' : 'Filter'} hooks in the ${title} category.`,
+      `title: ${yamlStr(title)}`,
+      `description: ${yamlStr(`${type === 'action' ? 'Action' : 'Filter'} hooks in the ${title} category.`)}`,
       '---',
       '',
       `# ${title}`,
@@ -2490,8 +2601,8 @@ function buildHookCategoryDoc(title, hooks, hookMap, type) {
 
   const lines = [
     '---',
-    `title: ${title}`,
-    `description: ${type === 'action' ? 'Action' : 'Filter'} hooks in the ${title} category.`,
+    `title: ${yamlStr(title)}`,
+    `description: ${yamlStr(`${type === 'action' ? 'Action' : 'Filter'} hooks in the ${title} category.`)}`,
     '---',
     '',
     `# ${title}`,
@@ -2517,10 +2628,48 @@ function buildHookCategoryDoc(title, hooks, hookMap, type) {
   return lines.join('\n') + '\n'
 }
 
-function buildHooksIndexDoc(actionMap, filterMap, hasMiscActions = false, hasMiscFilters = false) {
-  const actionCount = Object.keys(actionMap).length
-  const filterCount = Object.keys(filterMap).length
+// One line per hook category page, for the index tables. A page written for a
+// category missing here still gets a row (with an empty description), so a new
+// category can never be orphaned from the indexes or the sidebar.
+const HOOK_CATEGORY_DESC = {
+  action: {
+    affiliates:   'Affiliate lifecycle events — created, updated, status changes, deleted',
+    groups:       'Affiliate group lifecycle events',
+    referrals:    'Referral creation, status transitions, and deletion',
+    payouts:      'Payout batch and transaction events',
+    portal:       'Customer portal render hooks',
+    integrations: 'Third-party integration events and data migration hooks',
+    creatives:    'Creative asset lifecycle events',
+    misc:         'Hooks that do not fit the categories above',
+  },
+  filter: {
+    affiliates:   'Affiliate data, rate calculation, and display filters',
+    groups:       'Affiliate group data filters',
+    referrals:    'Commission amounts, referral data, and provider URL filters',
+    payouts:      'Payout methods, creation, validation, and pre-processing filters',
+    permissions:  'Access control and capability checks',
+    portal:       'Affiliate portal UI, menus, and smart-code filters',
+    settings:     'Plugin configuration, admin UI, and JS variable filters',
+    auth:         'Registration form, login, captcha, and reserved username filters',
+    integrations: 'Integration configuration, visit tracking, proxy and IP filters',
+    creatives:    'Creative asset data filters',
+    mcp:          'MCP server tools, tool list, instructions, and result format',
+    misc:         'Filters that do not fit the categories above',
+  },
+}
 
+// pages: [{ cat, title }] in sidebar order, as written by main().
+function hookCategoryRows(type, pages) {
+  const dir = type === 'action' ? 'actions' : 'filters'
+  return pages.map(({ cat, title }) => {
+    const isPro = /\(Pro\)/.test(title)
+    const name  = title.replace(/\s*\(Pro\)/, '')
+    const desc  = HOOK_CATEGORY_DESC[type][cat] ?? ''
+    return `| [${name}](/hooks/${dir}/${cat}) | ${desc}${isPro ? ' <span class="pro-badge">PRO</span>' : ''} |`
+  })
+}
+
+function buildHooksIndexDoc(actionMap, filterMap, actionPages, filterPages) {
   return [
     '---',
     'title: Hooks Overview',
@@ -2529,42 +2678,24 @@ function buildHooksIndexDoc(actionMap, filterMap, hasMiscActions = false, hasMis
     '',
     '# Hooks Overview',
     '',
-    `FluentAffiliate registers **${actionCount} action hooks** and **${filterCount} filter hooks** (including dynamic variants).`,
+    `FluentAffiliate registers **${Object.keys(actionMap).length} action hooks** and **${Object.keys(filterMap).length} filter hooks** (including dynamic variants).`,
     '',
     '## Action Hooks',
     '',
     '| Category | Description |',
     '|----------|-------------|',
-    '| [Affiliates](/hooks/actions/affiliates) | Affiliate lifecycle events |',
-    '| [Referrals](/hooks/actions/referrals) | Referral creation and status changes |',
-    '| [Payouts](/hooks/actions/payouts) | Payout and transaction events |',
-    '| [Portal](/hooks/actions/portal) | Customer portal render hooks |',
-    '| [Integrations](/hooks/actions/integrations) | Third-party integration and migration events |',
-    '| [Groups](/hooks/actions/groups) | Affiliate group lifecycle events <span class="pro-badge">PRO</span> |',
-    '| [Creatives](/hooks/actions/creatives) | Creative asset lifecycle events <span class="pro-badge">PRO</span> |',
-    ...(hasMiscActions ? ['| [Miscellaneous](/hooks/actions/misc) | Hooks that do not fit the categories above |'] : []),
+    ...hookCategoryRows('action', actionPages),
     '',
     '## Filter Hooks',
     '',
     '| Category | Description |',
     '|----------|-------------|',
-    '| [Affiliates](/hooks/filters/affiliates) | Affiliate data and behaviour filters |',
-    '| [Referrals](/hooks/filters/referrals) | Commission and referral data filters |',
-    '| [Permissions](/hooks/filters/permissions) | Access control filters |',
-    '| [Portal](/hooks/filters/portal) | Affiliate portal UI filters |',
-    '| [Settings](/hooks/filters/settings) | Plugin configuration and admin UI filters |',
-    '| [Auth](/hooks/filters/auth) | Registration and login filters |',
-    '| [Integrations](/hooks/filters/integrations) | Integration config and data filters |',
-    '| [Groups](/hooks/filters/groups) | Affiliate group data filters <span class="pro-badge">PRO</span> |',
-    '| [Creatives](/hooks/filters/creatives) | Creative asset data filters <span class="pro-badge">PRO</span> |',
-    ...(hasMiscFilters ? ['| [Miscellaneous](/hooks/filters/misc) | Filters that do not fit the categories above |'] : []),
+    ...hookCategoryRows('filter', filterPages),
     '',
   ].join('\n') + '\n'
 }
 
-function buildActionHooksIndexDoc(actionMap, hasMisc = false) {
-  const actionCount = Object.keys(actionMap).length
-
+function buildActionHooksIndexDoc(actionMap, pages) {
   return [
     '---',
     'title: Action Hooks',
@@ -2573,25 +2704,16 @@ function buildActionHooksIndexDoc(actionMap, hasMisc = false) {
     '',
     '# Action Hooks',
     '',
-    `FluentAffiliate fires **${actionCount} action hooks** (including dynamic variants). Use \`add_action()\` to hook into these events.`,
+    `FluentAffiliate fires **${Object.keys(actionMap).length} action hooks** (including dynamic variants). Use \`add_action()\` to hook into these events.`,
     '',
     '| Category | Description |',
     '|----------|-------------|',
-    '| [Affiliates](/hooks/actions/affiliates) | Affiliate lifecycle events — created, updated, status changes, deleted |',
-    '| [Referrals](/hooks/actions/referrals) | Referral creation, status transitions, and deletion |',
-    '| [Payouts](/hooks/actions/payouts) | Payout batch and transaction events |',
-    '| [Portal](/hooks/actions/portal) | Customer portal render hooks |',
-    '| [Integrations](/hooks/actions/integrations) | Third-party integration events and data migration hooks |',
-    '| [Groups](/hooks/actions/groups) | Affiliate group lifecycle events <span class="pro-badge">PRO</span> |',
-    '| [Creatives](/hooks/actions/creatives) | Creative asset lifecycle events <span class="pro-badge">PRO</span> |',
-    ...(hasMisc ? ['| [Miscellaneous](/hooks/actions/misc) | Hooks that do not fit the categories above |'] : []),
+    ...hookCategoryRows('action', pages),
     '',
   ].join('\n') + '\n'
 }
 
-function buildFilterHooksIndexDoc(filterMap, hasMisc = false) {
-  const filterCount = Object.keys(filterMap).length
-
+function buildFilterHooksIndexDoc(filterMap, pages) {
   return [
     '---',
     'title: Filter Hooks',
@@ -2600,21 +2722,11 @@ function buildFilterHooksIndexDoc(filterMap, hasMisc = false) {
     '',
     '# Filter Hooks',
     '',
-    `FluentAffiliate exposes **${filterCount} filter hooks** (including dynamic variants). Use \`add_filter()\` to modify data or behaviour.`,
+    `FluentAffiliate exposes **${Object.keys(filterMap).length} filter hooks** (including dynamic variants). Use \`add_filter()\` to modify data or behaviour.`,
     '',
     '| Category | Description |',
     '|----------|-------------|',
-    '| [Affiliates](/hooks/filters/affiliates) | Affiliate data, rate calculation, and display filters |',
-    '| [Referrals](/hooks/filters/referrals) | Commission amounts, referral data, and provider URL filters |',
-    '| [Payouts](/hooks/filters/payouts) | Payout creation and pre-processing filters |',
-    '| [Permissions](/hooks/filters/permissions) | Access control and capability checks |',
-    '| [Portal](/hooks/filters/portal) | Affiliate portal UI, menus, and smart-code filters |',
-    '| [Settings](/hooks/filters/settings) | Plugin configuration, admin UI, and JS variable filters |',
-    '| [Auth](/hooks/filters/auth) | Registration form, login, and reserved username filters |',
-    '| [Integrations](/hooks/filters/integrations) | Integration configuration, menu labels, and product option filters |',
-    '| [Groups](/hooks/filters/groups) | Affiliate group data filters <span class="pro-badge">PRO</span> |',
-    '| [Creatives](/hooks/filters/creatives) | Creative asset data filters <span class="pro-badge">PRO</span> |',
-    ...(hasMisc ? ['| [Miscellaneous](/hooks/filters/misc) | Filters that do not fit the categories above |'] : []),
+    ...hookCategoryRows('filter', pages),
     '',
   ].join('\n') + '\n'
 }
@@ -2749,6 +2861,12 @@ const REST_DESCRIPTIONS = {
   'POST /settings/managers':               'Add or update an affiliate manager.',
   'DELETE /settings/managers/{id}':        'Remove an affiliate manager.',
 
+  // MCP settings
+  'GET /settings/mcp':                 'Get the MCP server status for the settings screen: the switch, the endpoint URL, the connection name for AI apps, the MCP adapter status, the FluentHub state, the tool count, and whether the current user can connect.',
+  'POST /settings/mcp':                'Turn the MCP server on or off (`settings.enabled`: `yes` or `no`). Only a site administrator (`manage_options`) can change it; other users get `403`.',
+  'POST /settings/mcp/enable-hub':     'Turn on the FluentHub MCP server (`target`: `hub`, the default) or the MCP server of another Fluent plugin (`target`: its slug), through FluentHub. Needs `manage_options`. Nothing can be turned off from this route. Returns `422` with a reason when FluentHub cannot do it.',
+  'POST /settings/mcp/install-toolkit': 'Install and activate FluentHub, which provides the MCP adapter. FluentAffiliate does not install plugins itself: an active Fluent Pro plugin answers the `fluent_toolkit/do_auto_install` action (FluentAffiliate Pro does). Needs `install_plugins`. Without an installer, returns `422` with `toolkit_download_url`.',
+
   // Pro: PayPal Payouts settings
   'GET /settings/paypal-payouts':          'Get the PayPal Payouts settings and the webhook URL to register at PayPal. Client secrets are returned masked.',
   'POST /settings/paypal-payouts':         'Save the PayPal Payouts settings (`settings.mode` and the `test_*` / `live_*` client ID and secret). Changed key pairs are checked with PayPal before anything is saved. A webhook is registered for each configured mode that does not have one; problems are returned in `notices`. Send the masked secret back unchanged to keep the stored secret.',
@@ -2834,8 +2952,14 @@ const REST_MODULE_META = {
   license: {
     title: 'License API',
     description: 'Pro license status retrieval, activation, and deactivation.',
-    auth: 'License routes are protected by `AdminPolicy` and require WordPress administrator access.',
+    auth: 'License routes are protected by `SuperAdminPolicy` and require WordPress administrator access (`manage_options`).',
     isPro: true,
+  },
+  mcp: {
+    title: 'MCP Settings API',
+    description: 'The "MCP for AI Agents" settings screen: read the MCP server status, turn the server on or off, turn on the FluentHub MCP server, and install FluentHub. The MCP tools themselves are documented under [MCP Server](/mcp/).',
+    auth: 'MCP settings routes are protected by `AdminPolicy` (`manage_options` or the `manage_all_data` permission). Turning MCP on or off and turning on FluentHub also need `manage_options`; installing FluentHub needs `install_plugins`. The controller checks these capabilities.',
+    isPro: false,
   },
 }
 
@@ -2855,6 +2979,8 @@ function humanizeSlug(value) {
     .replace(/\bcrm\b/gi, 'CRM')
     .replace(/\bwp\b/gi, 'WP')
     .replace(/\bpaypal\b/gi, 'PayPal')
+    .replace(/\bmcp\b/gi, 'MCP')
+    .replace(/\bfluenthub\b/gi, 'FluentHub')
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/\b\w/g, (match) => match.toUpperCase())
@@ -2889,6 +3015,7 @@ function classifyRoute(route) {
     if (controller === 'CreativeController') return 'creatives'
     if (controller === 'DomainController') return 'connected-sites'
     if (controller === 'LicenseController') return 'license'
+    if (controller === 'McpSettingsController') return 'mcp'
     return 'settings'
   }
   return prefix
@@ -3052,6 +3179,11 @@ const OPERATION_SLUG_MAP = [
   { module: 'connected-sites', method: 'PATCH', path: /^\/settings\/connected-sites-config$/, slug: 'update-connected-sites-status' },
   { module: 'connected-sites', method: 'POST',  path: /^\/settings\/connected-sites-config\/issue$/, slug: 'issue-site-token' },
   { module: 'connected-sites', method: 'POST',  path: /^\/settings\/connected-sites-config\/disconnect$/, slug: 'disconnect-site' },
+  // mcp settings
+  { module: 'mcp', method: 'GET',  path: /^\/settings\/mcp$/, slug: 'get-mcp-settings' },
+  { module: 'mcp', method: 'POST', path: /^\/settings\/mcp$/, slug: 'update-mcp-settings' },
+  { module: 'mcp', method: 'POST', path: /^\/settings\/mcp\/enable-hub$/, slug: 'enable-mcp-hub' },
+  { module: 'mcp', method: 'POST', path: /^\/settings\/mcp\/install-toolkit$/, slug: 'install-fluenthub' },
   // license (Pro)
   { module: 'license', method: 'GET',    path: /^\/settings\/license$/, slug: 'get-license' },
   { module: 'license', method: 'POST',   path: /^\/settings\/license$/, slug: 'save-license' },
@@ -3116,8 +3248,8 @@ function buildRestApiModuleDoc(module, moduleRoutes) {
   if (!moduleRoutes.length) {
     return [
       '---',
-      `title: ${meta.title}`,
-      `description: ${meta.description}`,
+      `title: ${yamlStr(meta.title)}`,
+      `description: ${yamlStr(meta.description)}`,
       '---',
       '',
       `# ${meta.title}${meta.isPro ? ' <span class="pro-badge">PRO</span>' : ''}`,
@@ -3133,8 +3265,8 @@ function buildRestApiModuleDoc(module, moduleRoutes) {
 
   const lines = [
     '---',
-    `title: ${meta.title}`,
-    `description: ${meta.description}`,
+    `title: ${yamlStr(meta.title)}`,
+    `description: ${yamlStr(meta.description)}`,
     '---',
     '',
     `# ${meta.title}${meta.isPro ? ' <span class="pro-badge">PRO</span>' : ''}`,
@@ -3172,8 +3304,8 @@ function buildOperationDoc(route) {
 
   return [
     '---',
-    `title: ${route.title}`,
-    `description: "${route.description.replace(/"/g, '\\"')}"`,
+    `title: ${yamlStr(route.title)}`,
+    `description: ${yamlStr(route.description)}`,
     'outline: false',
     'aside: false',
     '---',
@@ -3389,7 +3521,45 @@ const paypalPayoutActionResponse = {
   required: ['message', 'payout'],
 }
 
+const mcpScreenResponse = {
+  type: 'object',
+  properties: {
+    message:      { type: 'string', description: 'Write routes only.' },
+    settings:     { type: 'object', properties: { enabled: { type: 'string', enum: ['yes', 'no'] } } },
+    endpoint_url: { type: 'string', description: 'The MCP endpoint, `/wp-json/fluent-affiliate/mcp`.' },
+    server_name:  { type: 'string', description: 'Connection name for AI apps: `faff-` plus the site address, cut so every tool name fits 64 characters.' },
+    adapter: {
+      type: 'object',
+      properties: {
+        installed:            { type: 'boolean' },
+        active:               { type: 'boolean', description: 'An MCP adapter and the Abilities API are loaded.' },
+        provider:             { type: 'string', enum: ['toolkit', 'plugin', 'other', ''], description: '`toolkit`: FluentHub. `plugin`: the MCP Adapter plugin.' },
+        version:              { type: 'string', nullable: true },
+        abilities_api:        { type: 'boolean', description: 'WordPress 6.9+ Abilities API is available.' },
+        toolkit_installed:    { type: 'boolean' },
+        toolkit_active:       { type: 'boolean' },
+        can_auto_install:     { type: 'boolean' },
+        toolkit_download_url: { type: 'string' },
+        download_url:         { type: 'string' },
+      },
+    },
+    hub:                { type: 'object', nullable: true, description: 'FluentHub one-URL server state, or `null` when FluentHub is not active.' },
+    tools:              { type: 'object', properties: { total: { type: 'integer' }, pro: { type: 'integer' } } },
+    can_manage:         { type: 'boolean', description: 'The current user has `manage_options`.' },
+    user_can_connect:   { type: 'boolean' },
+    app_passwords_url:  { type: 'string' },
+    plugins_url:        { type: 'string' },
+    current_user_login: { type: 'string' },
+    is_local_dev:       { type: 'boolean' },
+  },
+}
+
 const RESPONSE_SCHEMAS = {
+  // ── MCP settings ─────────────────────────────────────────────────────────
+  'get-mcp-settings':    mcpScreenResponse,
+  'update-mcp-settings': mcpScreenResponse,
+  'enable-mcp-hub':      mcpScreenResponse,
+  'install-fluenthub':   mcpScreenResponse,
   // ── Affiliates ──────────────────────────────────────────────────────────
   'list-affiliates': {
     type: 'object',
@@ -4442,6 +4612,356 @@ function buildRestApiIndexDoc(allRoutes) {
 // Main
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// MCP server (app/Modules/MCP) — tool reference
+// ---------------------------------------------------------------------------
+
+// The tool definitions are PHP arrays built from shared variables and Pro
+// conditionals, so they are read by running scripts/extract-mcp.php (once as
+// free, once with FLUENT_AFFILIATE_PRO) instead of parsing PHP here. The result
+// is cached in .generated/mcp-tools.json for machines without a php binary.
+const MCP_CACHE = join(repoRoot, '.generated', 'mcp-tools.json')
+
+// McpGate::can() — what each `requires` value checks.
+const MCP_REQUIREMENTS = {
+  any:             { label: 'Any FluentAffiliate permission', check: '`PermissionManager::hasAnyPermission()`' },
+  affiliate_read:  { label: 'Read affiliates',  check: '`read_all_affiliates`, `manage_all_affiliates` or `manage_all_data`' },
+  affiliate_write: { label: 'Manage affiliates', check: '`manage_all_affiliates` or `manage_all_data`' },
+  referral_read:   { label: 'Read referrals',   check: '`read_all_referrals`, `manage_all_referrals` or `manage_all_data`' },
+  referral_write:  { label: 'Manage referrals', check: '`manage_all_referrals` or `manage_all_data`' },
+  visit_read:      { label: 'Read visits',      check: '`read_all_visits` or `manage_all_data`' },
+  payout_read:     { label: 'Read payouts',     check: '`read_all_payouts`, `manage_all_payouts` or `manage_all_data`' },
+  payout_write:    { label: 'Manage payouts',   check: '`manage_all_payouts` or `manage_all_data`' },
+}
+
+// Tool page groups, by the class that runs the tool.
+const MCP_GROUPS = [
+  { key: 'context',    title: 'Context',    cls: 'ContextTools' },
+  { key: 'affiliates', title: 'Affiliates', cls: 'AffiliateTools' },
+  { key: 'referrals',  title: 'Referrals',  cls: 'ReferralTools' },
+  { key: 'visits',     title: 'Visits',     cls: 'VisitTools' },
+  { key: 'payouts',    title: 'Payouts',    cls: 'PayoutTools' },
+  { key: 'reports',    title: 'Reports',    cls: 'ReportTools' },
+]
+
+// Error codes a tool returns ({"error": {code, ...}}). New codes found in the
+// source without an entry here are still listed, with an empty description.
+const MCP_ERROR_DOCS = {
+  invalid_param:  'A value is wrong. `fields` names the parameters; the message lists the allowed values.',
+  unknown_param:  'The tool has no parameter with that name. The error lists the allowed names. Unknown parameters fail instead of being dropped, because a dropped filter widens the result.',
+  not_found:      'The record does not exist. `fields` names the id parameter.',
+  forbidden:      'The MCP server is off, or the user lacks the permission the tool needs.',
+  not_allowed:    'The action is not allowed for the record in its current state, for example a paid referral cannot change. It is `retryable` when the state is temporary, such as a payout that a gateway is still sending.',
+  conflict:       'The call collides with the current state, and nothing changed: the `confirm` value was used already (each value works once), the record changed after the preview, or the user is already an affiliate.',
+  internal_error: 'The tool failed on the site. Check the site error log.',
+}
+
+// Input fields whose allowed values depend on the site, not on the code.
+const MCP_FIELD_NOTES = {
+  'fluent-affiliate/create-payout': {
+    payout_method: 'The values are the keys of the `fluent_affiliate/payout_methods` filter: `manual`, plus `paypal_payouts` when PayPal Payouts (Pro) is set up.',
+  },
+}
+
+function runMcpExtractor(pro) {
+  const args = [join(repoRoot, 'scripts', 'extract-mcp.php'), coreRoot]
+  if (pro) args.push('--pro')
+  const out = spawnSync('php', args, { encoding: 'utf8' })
+  if (out.error || out.status !== 0) {
+    throw new Error(out.error ? out.error.message : (out.stderr || `exit ${out.status}`).trim())
+  }
+  return JSON.parse(out.stdout)
+}
+
+// PHP encodes an empty properties array as [].
+function schemaProps(schema) {
+  const props = schema?.properties
+  return props && !Array.isArray(props) ? props : {}
+}
+
+function extractMcp() {
+  if (!existsSync(join(coreRoot, 'app', 'Modules', 'MCP', 'AbilitiesRegistrar.php'))) return null
+
+  let free, pro
+  try {
+    free = runMcpExtractor(false)
+    pro  = runMcpExtractor(true)
+  } catch (err) {
+    if (existsSync(MCP_CACHE)) {
+      console.warn(`  MCP: php extractor failed (${err.message}); using the cached .generated/mcp-tools.json`)
+      return JSON.parse(readFileSync(MCP_CACHE, 'utf8'))
+    }
+    console.warn(`  MCP: php extractor failed (${err.message}) and no cache exists; MCP docs skipped`)
+    return null
+  }
+
+  // Mark what only exists with Pro: whole tools, input fields, and enum values.
+  const tools = {}
+  for (const [name, tool] of Object.entries(pro.tools)) {
+    const freeTool  = free.tools[name]
+    const freeProps = schemaProps(freeTool?.input_schema)
+    const proFields = []
+    const proEnums  = {}
+    for (const [field, def] of Object.entries(schemaProps(tool.input_schema))) {
+      if (!freeProps[field]) { proFields.push(field); continue }
+      const extra = (def.enum ?? []).filter(v => !(freeProps[field].enum ?? []).includes(v))
+      if (extra.length) proEnums[field] = extra
+    }
+    tools[name] = { ...tool, pro: tool.pro || !freeTool, pro_fields: proFields, pro_enums: proEnums }
+  }
+
+  // Requirements the gate accepts — warn when the source adds one this file does not describe.
+  const gate = readFile(join(coreRoot, 'app', 'Modules', 'MCP', 'McpGate.php'))
+  const reqBlock = gate.match(/const REQUIREMENTS = \[([\s\S]*?)\];/)
+  for (const [, req] of (reqBlock?.[1] ?? '').matchAll(/'([a-z_]+)'/g)) {
+    if (!MCP_REQUIREMENTS[req]) console.warn(`  MCP: requirement '${req}' has no entry in MCP_REQUIREMENTS`)
+  }
+
+  // Error codes used anywhere in the module.
+  const codes = new Set()
+  for (const file of scanPhpFiles(join(coreRoot, 'app', 'Modules', 'MCP'))) {
+    for (const [, code] of readFile(file).matchAll(/error\('([a-z_]+)'/g)) codes.add(code)
+  }
+  codes.add('invalid_param')
+
+  const data = {
+    server_id:    pro.server_id,
+    route:        pro.route,
+    instructions: pro.instructions,
+    error_codes:  [...codes].sort(),
+    tools,
+  }
+  writeFileSync(MCP_CACHE, JSON.stringify(data, null, 2) + '\n')
+  return data
+}
+
+function mcpShortName(name) {
+  return name.replace(/^fluent-affiliate\//, '')
+}
+
+function mcpGroupOf(tool) {
+  const cls = (tool.callback ?? '').split('::')[0]
+  return MCP_GROUPS.find(g => g.cls === cls) ?? { key: 'other', title: 'Other', cls }
+}
+
+// Escape text for a markdown table cell that Vue also compiles.
+function mdCell(text) {
+  return String(text ?? '')
+    .replace(/\|/g, '\\|')
+    .replace(/</g, '&lt;')
+    .replace(/\{\{/g, '{ {')
+    .replace(/\n+/g, ' ')
+}
+
+function mcpIsWrite(tool) {
+  return tool.annotations?.readonly === false
+}
+
+function mcpTwoStep(tool) {
+  return Boolean(schemaProps(tool.input_schema).confirm)
+}
+
+function mcpTypeOf(def) {
+  if (def.type === 'array') return `${def.items?.type ?? 'mixed'}[]`
+  return def.type ?? 'mixed'
+}
+
+function mcpConstraints(def) {
+  const parts = []
+  const values = def.enum ?? def.items?.enum
+  if (values) parts.push(`One of: ${values.map(v => `\`${v}\``).join(', ')}.`)
+  if (def.minimum !== undefined) parts.push(`Minimum ${def.minimum}.`)
+  if (def.maxItems !== undefined) parts.push(`At most ${def.maxItems} items.`)
+  return parts.join(' ')
+}
+
+function buildMcpToolDoc(name, tool) {
+  const short    = mcpShortName(name)
+  const group    = mcpGroupOf(tool)
+  const req      = MCP_REQUIREMENTS[tool.requires] ?? { label: tool.requires, check: '' }
+  const props    = schemaProps(tool.input_schema)
+  const required = tool.input_schema?.required ?? []
+  const notes    = MCP_FIELD_NOTES[name] ?? {}
+  const proBadge = ' <span class="pro-badge">PRO</span>'
+
+  const lines = [
+    '---',
+    `title: ${yamlStr(tool.label)}`,
+    `description: ${yamlStr(firstSentence(tool.description))}`,
+    '---',
+    '',
+    `# ${tool.label}${tool.pro ? proBadge : ''}`,
+    '',
+    mdCell(tool.description).replace(/\\\|/g, '|'),
+    '',
+    '| | |',
+    '|---|---|',
+    `| **Ability** | \`${name}\` |`,
+    `| **MCP tool name** | \`${name.replace('/', '-')}\` |`,
+    `| **Group** | ${group.title} |`,
+    `| **Permission** | ${req.label}: \`manage_options\`, or ${req.check} |`,
+    `| **Type** | ${mcpIsWrite(tool) ? 'Write' : 'Read-only'}${mcpTwoStep(tool) ? ' — two calls: preview, then confirm' : ''} |`,
+    `| **Runs** | \`${tool.callback}\` |`,
+    '',
+  ]
+
+  lines.push('## Input', '')
+  const fields = Object.entries(props)
+  if (!fields.length && !tool.pro_fields.length) {
+    lines.push('This tool takes no input.', '')
+  } else {
+    lines.push('| Parameter | Type | Required | Description |', '|---|---|---|---|')
+    for (const [field, def] of fields) {
+      const proField = tool.pro_fields.includes(field) ? proBadge : ''
+      const proEnum  = tool.pro_enums[field] ? ` ${tool.pro_enums[field].map(v => `\`${v}\``).join(', ')} needs Pro.` : ''
+      const desc = [def.description, mcpConstraints(def), proEnum.trim(), notes[field]].filter(Boolean).join(' ')
+      lines.push(`| \`${field}\`${proField} | \`${mdCell(mcpTypeOf(def))}\` | ${required.includes(field) ? 'Yes' : 'No'} | ${mdCell(desc)} |`)
+    }
+    lines.push('')
+  }
+
+  if (mcpTwoStep(tool)) {
+    lines.push(
+      '## Two-step confirmation',
+      '',
+      `A call without \`confirm\` changes nothing. It returns \`needs_confirmation: true\`, a \`preview\` of the change, and a \`confirm\` value. Show the preview to the person. After they agree, call \`${short}\` again with the same arguments and that \`confirm\` value. The value stays valid for at least 15 minutes, only while what the preview showed is unchanged, and only once. A stale value fails with \`invalid_param\` on \`confirm\`, and the error carries the new preview and confirm value. See [Conventions](/mcp/#conventions).`,
+      '',
+    )
+  }
+
+  lines.push('## Annotations', '', '| Hint | Value |', '|---|---|')
+  for (const [key, value] of Object.entries(tool.annotations ?? {})) {
+    lines.push(`| \`${key}\` | \`${JSON.stringify(value)}\` |`)
+  }
+  lines.push('')
+
+  // A tools/call request with the required arguments filled with placeholders.
+  const exampleArgs = {}
+  for (const field of required) {
+    const def = props[field] ?? {}
+    exampleArgs[field] = def.enum ? def.enum[0]
+      : def.type === 'integer' ? 1
+      : def.type === 'number' ? 10
+      : def.type === 'boolean' ? true
+      : def.type === 'array' ? (def.items?.type === 'integer' ? [1, 2] : [])
+      : 'value'
+  }
+  lines.push(
+    '## Example request',
+    '',
+    '```json',
+    JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/call',
+      params: { name: name.replace('/', '-'), arguments: exampleArgs },
+    }, null, 2),
+    '```',
+    '',
+  )
+
+  return lines.join('\n')
+}
+
+function buildMcpIndexDoc(mcp) {
+  const tools = Object.entries(mcp.tools)
+  const lines = [
+    '---',
+    'title: MCP Server',
+    'description: Reference for the FluentAffiliate MCP server — every tool AI agents can call, the permission each tool needs, and the shared conventions.',
+    '---',
+    '',
+    '# MCP Server',
+    '',
+    `FluentAffiliate runs an MCP (Model Context Protocol) server at \`/wp-json/${mcp.server_id}/${mcp.route}\`. AI agents, such as Claude or ChatGPT, use its tools to read and manage affiliates, referrals, visits and payouts. The agent acts as the connected WordPress user, with that user's FluentAffiliate permissions.`,
+    '',
+    `The server has ${tools.length} tools. It is off by default. For setup, connection and extension, read the [MCP guide](/guides/mcp).`,
+    '',
+    '## Tools',
+    '',
+  ]
+
+  for (const group of [...MCP_GROUPS, { key: 'other', title: 'Other' }]) {
+    const inGroup = tools.filter(([, t]) => mcpGroupOf(t).key === group.key)
+    if (!inGroup.length) continue
+    lines.push(`### ${group.title}`, '', '| Tool | Permission | Type | Description |', '|---|---|---|---|')
+    for (const [name, tool] of inGroup) {
+      const short = mcpShortName(name)
+      const type  = mcpIsWrite(tool) ? (mcpTwoStep(tool) ? 'Write, two-step' : 'Write') : 'Read'
+      const req   = MCP_REQUIREMENTS[tool.requires]?.label ?? tool.requires
+      lines.push(`| [\`${short}\`](/mcp/tools/${short})${tool.pro ? ' <span class="pro-badge">PRO</span>' : ''} | ${req} | ${type} | ${mdCell(firstSentence(tool.description))} |`)
+    }
+    lines.push('')
+  }
+
+  lines.push(
+    '## Permissions',
+    '',
+    'Two checks run on every call:',
+    '',
+    '1. **The server gate.** The MCP switch is on, and the user is a site administrator (`manage_options`) or has at least one FluentAffiliate permission (an affiliate manager). Affiliates themselves cannot connect.',
+    '2. **The tool permission.** Each tool needs one of the permissions below — the same check as the matching admin REST routes. A client sees only the tools its user can run. A hidden tool called by name returns `forbidden`.',
+    '',
+    '| Permission | Passes with |',
+    '|---|---|',
+  )
+  for (const req of Object.values(MCP_REQUIREMENTS)) {
+    lines.push(`| ${req.label} | \`manage_options\`, or ${req.check} |`)
+  }
+  lines.push('')
+
+  lines.push(
+    '## Conventions',
+    '',
+    '- **Results** are `{summary, data, meta}`. `meta.schema_version` is the result format version. Lists page with `page` and `per_page` (default 20, max 100); `meta.paging.has_more` says when to continue. `meta.warnings` lists what a tool changed or left out.',
+    '- **Errors** are `{"error": {code, message, retryable, fields}}`. Retry only when `retryable` is `true`.',
+    '- **Money** is a decimal in major units beside its currency code, for example `12.50` `USD`.',
+    '- **Dates** in results are site time with the offset. Inputs take a written date (`2026-11-20`) or date and time; without an offset they are site time. Relative words such as "yesterday" are refused.',
+    '- **Two-step writes.** Tools with a `confirm` parameter return a preview and a `confirm` value first, and change nothing. The second call with `confirm` makes the change.',
+    '',
+    '### Error codes',
+    '',
+    '| Code | Meaning |',
+    '|---|---|',
+  )
+  for (const code of mcp.error_codes) {
+    lines.push(`| \`${code}\` | ${mcpErrorDoc(code)} |`)
+  }
+  lines.push(
+    '',
+    '## Server instructions',
+    '',
+    'The server sends this text to every client in the MCP `instructions` field. Filter it with [`fluent_affiliate/mcp/server_instructions`](/hooks/filters/mcp#fluent-affiliate-mcp-server-instructions).',
+    '',
+    '```text',
+    mcp.instructions,
+    '```',
+    '',
+  )
+  return lines.join('\n')
+}
+
+function mcpErrorDoc(code) {
+  return MCP_ERROR_DOCS[code] ?? ''
+}
+
+function writeMcpDocs(mcp) {
+  const dir = join(DOCS_DIR, 'mcp')
+  cleanDir(dir)
+  if (!mcp) return
+  writeDoc(join(dir, 'index.md'), buildMcpIndexDoc(mcp))
+  for (const [name, tool] of Object.entries(mcp.tools)) {
+    writeDoc(join(dir, 'tools', `${mcpShortName(name)}.md`), buildMcpToolDoc(name, tool))
+  }
+  // Sidebar order for .vitepress/config.mts
+  const sidebar = MCP_GROUPS.map(g => ({
+    title: g.title,
+    tools: Object.entries(mcp.tools).filter(([, t]) => mcpGroupOf(t).key === g.key).map(([n, t]) => ({ slug: mcpShortName(n), label: t.label })),
+  })).filter(g => g.tools.length)
+  writeFileSync(join(generatedRoot, 'mcp-sidebar.json'), JSON.stringify(sidebar, null, 2) + '\n')
+  console.log('  wrote .generated/mcp-sidebar.json')
+}
+
 async function main() {
   console.log('\nParsing PHP source…')
 
@@ -4490,6 +5010,7 @@ async function main() {
       if (out[canonical]) {
         // merge file lists
         out[canonical].files = [...new Set([...out[canonical].files, ...v.files])]
+        out[canonical].argCounts = new Set([...(out[canonical].argCounts ?? []), ...(v.argCounts ?? [])])
       } else {
         out[canonical] = v
       }
@@ -4501,6 +5022,22 @@ async function main() {
 
   console.log('  action hooks:', Object.keys(actions).length)
   console.log('  filter hooks:', Object.keys(filters).length)
+
+  // Documented params must match what the source passes; a hook can keep its
+  // name and still gain or lose an argument.
+  for (const [hook, info] of [...Object.entries(actions), ...Object.entries(filters)]) {
+    const doc = HOOK_DOCS[hook]
+    if (!doc || !info.argCounts?.size) continue
+    if (!info.argCounts.has(doc.params.length)) {
+      console.warn(`  WARN hook params: ${hook} documents ${doc.params.length}, source passes ${[...info.argCounts].join('/')}`)
+    }
+    // An example closure that takes more arguments than the hook passes throws on PHP 8.
+    const closure = doc.example?.match(/function\s*\(([^)]*)\)/)
+    const taken = closure ? closure[1].split(',').filter(p => p.trim()).length : 0
+    if (taken > Math.max(...info.argCounts)) {
+      console.warn(`  WARN hook example: ${hook} closure takes ${taken}, source passes ${[...info.argCounts].join('/')}`)
+    }
+  }
 
   // ── Routes ────────────────────────────────────────────────────────────────
   const apiFile = join(coreRoot, 'app', 'Http', 'Routes', 'api.php')
@@ -4696,8 +5233,9 @@ async function main() {
     portal:       h => /\/portal|default_share_url|will_load_tracker|smartcode|smart_code/.test(h),
     settings:     h => /get_email_config|update_email_config|get_referral_config|update_referral_config|get_feature|update_feature|settings_menu|top_menu|right_menu|admin_vars|admin_menu_title|dashboard_notices|admin_url|portal_page_url|registered_features|max_execution|is_rtl|suggested_colors|payout_form_schema|referral_formats|portal_menu_items|\/currencies|get_currencies|currency_symbols|referral_config_field_types|default_referral_settings|social_media|pro_upgrade_base_url|license_grace_period_days|fluent_affiliate_base_url|fluent_affiliate_tracker_vars|fluent_affiliate_dashboard/.test(h),
     auth:         h => /\/auth\/|terms_policy|reserved_usernames|captcha|allowed_signup_roles|reserved_registration_field_names/.test(h),
-    integrations: h => /get_integrations|get_integration_config|get_integration_stored_config|save_integration_config|user_ip|trust_proxy_headers|trusted_proxies|visit_flood_limit|visit_dedup_window|md_ingest_limit|\/migrators|get_migration|get_current_data|wppayform|advanced_report|woo_menu|product_cat_options/.test(h),
+    integrations: h => /get_integrations|get_integration_config|get_integration_stored_config|save_integration_config|user_ip|trust_proxy_headers|trusted_proxies|cloudflare_ip_ranges|visit_flood_limit|visit_dedup_window|md_ingest_limit|\/migrators|get_migration|get_current_data|wppayform|advanced_report|woo_menu|product_cat_options/.test(h),
     creatives:    h => /creative/.test(h),
+    mcp:          h => /\/mcp[/_]/.test(h),
     misc:         () => true,
   }
 
@@ -4723,13 +5261,6 @@ async function main() {
     }
   }
 
-  const hasMiscActions = (actionsByCategory.misc ?? []).length > 0
-  const hasMiscFilters = (filtersByCategory.misc ?? []).length > 0
-
-  writeDoc(join(DOCS_DIR, 'hooks', 'index.md'), buildHooksIndexDoc(actions, filters, hasMiscActions, hasMiscFilters))
-  writeDoc(join(DOCS_DIR, 'hooks', 'actions', 'index.md'), buildActionHooksIndexDoc(actions, hasMiscActions))
-  writeDoc(join(DOCS_DIR, 'hooks', 'filters', 'index.md'), buildFilterHooksIndexDoc(filters, hasMiscFilters))
-
   const actionCategoryTitles = {
     affiliates:   'Affiliates',
     groups:       'Groups (Pro)',
@@ -4752,23 +5283,38 @@ async function main() {
     auth:         'Auth',
     integrations: 'Integrations',
     creatives:    'Creatives (Pro)',
+    mcp:          'MCP Server',
     misc:         'Miscellaneous',
   }
 
+  const actionPages = []
   for (const [cat, title] of Object.entries(actionCategoryTitles)) {
     const hooks = actionsByCategory[cat] ?? []
     // The misc fallback page only exists when something actually lands in it.
     if (cat === 'misc' && !hooks.length) continue
     const content = buildHookCategoryDoc(title, hooks, actions, 'action')
-    if (content) writeDoc(join(DOCS_DIR, 'hooks', 'actions', `${cat}.md`), content)
+    if (!content) continue
+    writeDoc(join(DOCS_DIR, 'hooks', 'actions', `${cat}.md`), content)
+    actionPages.push({ cat, title })
   }
 
+  const filterPages = []
   for (const [cat, title] of Object.entries(filterCategoryTitles)) {
     const hooks = filtersByCategory[cat] ?? []
     if (cat === 'misc' && !hooks.length) continue
     const content = buildHookCategoryDoc(title, hooks, filters, 'filter')
-    if (content) writeDoc(join(DOCS_DIR, 'hooks', 'filters', `${cat}.md`), content)
+    if (!content) continue
+    writeDoc(join(DOCS_DIR, 'hooks', 'filters', `${cat}.md`), content)
+    filterPages.push({ cat, title })
   }
+
+  // Indexes and the sidebar list exactly the pages written above.
+  writeDoc(join(DOCS_DIR, 'hooks', 'index.md'), buildHooksIndexDoc(actions, filters, actionPages, filterPages))
+  writeDoc(join(DOCS_DIR, 'hooks', 'actions', 'index.md'), buildActionHooksIndexDoc(actions, actionPages))
+  writeDoc(join(DOCS_DIR, 'hooks', 'filters', 'index.md'), buildFilterHooksIndexDoc(filters, filterPages))
+  ensureDir(generatedRoot)
+  writeFileSync(join(generatedRoot, 'hook-pages.json'), JSON.stringify({ actions: actionPages, filters: filterPages }, null, 2) + '\n')
+  console.log('  wrote .generated/hook-pages.json')
 
   // ── Write REST API docs ───────────────────────────────────────────────────
   console.log('\nWriting REST API docs…')
@@ -4812,6 +5358,11 @@ async function main() {
   const totalRoutes = allRoutes.length
   const totalSpecs = allRoutes.length
 
+  // ── Write MCP docs ────────────────────────────────────────────────────────
+  console.log('\nWriting MCP docs…')
+  const mcp = extractMcp()
+  writeMcpDocs(mcp)
+
   // Home page stats (docs/index.md → <DocsHome />) read this file, so the
   // counts follow the source instead of being hand-edited each release.
   const stats = {
@@ -4820,6 +5371,7 @@ async function main() {
     hooks:        Object.keys(actions).length + Object.keys(filters).length,
     tables:       Object.keys(tables).length,
     openapiSpecs: totalSpecs,
+    mcpTools:     mcp ? Object.keys(mcp.tools).length : 0,
   }
   writeFileSync(join(generatedRoot, 'stats.json'), JSON.stringify(stats, null, 2) + '\n')
   console.log('  wrote .generated/stats.json', JSON.stringify(stats))

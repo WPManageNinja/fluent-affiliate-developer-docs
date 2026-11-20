@@ -1,5 +1,5 @@
 ---
-title: Update Managers
+title: "Update Managers"
 description: "Add or update an affiliate manager."
 outline: false
 aside: false

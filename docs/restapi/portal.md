@@ -1,6 +1,6 @@
 ---
-title: Portal API
-description: Affiliate portal data — stats, referrals, transactions, visits, and settings for the currently authenticated affiliate.
+title: "Portal API"
+description: "Affiliate portal data — stats, referrals, transactions, visits, and settings for the currently authenticated affiliate."
 ---
 
 # Portal API

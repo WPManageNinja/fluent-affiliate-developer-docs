@@ -1,5 +1,5 @@
 ---
-title: Test PayPal Connection
+title: "Test PayPal Connection"
 description: "Test the saved keys for a mode (`mode`: `test` or `live`) by requesting an access token from PayPal."
 outline: false
 aside: false

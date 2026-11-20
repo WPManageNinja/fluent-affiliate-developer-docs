@@ -1,5 +1,5 @@
 ---
-title: Delete Payout Transaction
+title: "Delete Payout Transaction"
 description: "Delete a payout transaction."
 outline: false
 aside: false

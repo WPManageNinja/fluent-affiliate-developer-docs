@@ -46,12 +46,13 @@ When either job runs, the status transitions and `fluent_affiliate/creative_stat
 
 ```php
 // React to any creative becoming active or expired
-add_action('fluent_affiliate/creative_status_changed', function($creative, $newStatus) {
-    if ($newStatus === 'active') {
+// The hook passes the creative only; read the new status from it
+add_action('fluent_affiliate/creative_status_changed', function($creative) {
+    if ($creative->status === 'active') {
         // Notify relevant affiliates
         my_plugin_notify_affiliates_creative_live($creative);
     }
-}, 10, 2);
+}, 10, 1);
 ```
 
 ## Access Control (Privacy)

@@ -1,5 +1,5 @@
 ---
-title: Sync PayPal Payout
+title: "Sync PayPal Payout"
 description: "Read the payout batch from PayPal and settle each transaction from it. The webhook and the hourly job call the same sync."
 outline: false
 aside: false

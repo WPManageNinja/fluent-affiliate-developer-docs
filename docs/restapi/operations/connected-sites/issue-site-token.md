@@ -1,5 +1,5 @@
 ---
-title: Issue Site Token
+title: "Issue Site Token"
 description: "Validate and issue a token for a new site."
 outline: false
 aside: false
